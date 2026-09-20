@@ -76,13 +76,89 @@ def _empty_state(message: str) -> str:
     return f'<div class="empty">{message}</div>'
 
 
+def _registration_section_html(github_repo: str | None) -> str:
+    """
+    ダッシュボード上から、GitHub Issueフォーム(登録画面)を
+    入力内容を自動入力した状態で開けるようにするセクション。
+    実際のファイル書き換えはこれまで通りGitHub Actions側のIssue処理が行う。
+    """
+    if not github_repo:
+        return ""
+
+    return f"""
+    <h2>銘柄・設定の登録</h2>
+    <p class="reg-desc">
+      入力して「GitHubで登録する」を押すと、内容が自動入力された状態でGitHubの登録画面が新しいタブで開きます。
+      内容を確認して「Submit new issue」を押すと、数十秒後に自動で反映されます。
+    </p>
+    <div class="reg-grid">
+      <div class="reg-card">
+        <h3>保有銘柄を追加</h3>
+        <input type="text" id="reg-add-holding-code" placeholder="証券コード（例: 7203）">
+        <input type="text" id="reg-add-holding-name" placeholder="銘柄名（例: トヨタ自動車）">
+        <button onclick="regOpen('add-holding.yml', {{
+          code: document.getElementById('reg-add-holding-code').value,
+          name: document.getElementById('reg-add-holding-name').value
+        }})">GitHubで登録する</button>
+      </div>
+      <div class="reg-card">
+        <h3>保有銘柄を削除</h3>
+        <input type="text" id="reg-remove-holding-code" placeholder="証券コード（例: 7203）">
+        <button onclick="regOpen('remove-holding.yml', {{
+          code: document.getElementById('reg-remove-holding-code').value
+        }})">GitHubで登録する</button>
+      </div>
+      <div class="reg-card">
+        <h3>監視銘柄を追加</h3>
+        <input type="text" id="reg-add-watchlist-code" placeholder="証券コード（例: 7203）">
+        <input type="text" id="reg-add-watchlist-name" placeholder="銘柄名（例: トヨタ自動車）">
+        <button onclick="regOpen('add-watchlist.yml', {{
+          code: document.getElementById('reg-add-watchlist-code').value,
+          name: document.getElementById('reg-add-watchlist-name').value
+        }})">GitHubで登録する</button>
+      </div>
+      <div class="reg-card">
+        <h3>監視銘柄を削除</h3>
+        <input type="text" id="reg-remove-watchlist-code" placeholder="証券コード（例: 7203）">
+        <button onclick="regOpen('remove-watchlist.yml', {{
+          code: document.getElementById('reg-remove-watchlist-code').value
+        }})">GitHubで登録する</button>
+      </div>
+      <div class="reg-card">
+        <h3>買い時ランキングの価格上限を変更</h3>
+        <input type="text" id="reg-price-ceiling" placeholder="価格上限（円）例: 1500">
+        <button onclick="regOpen('set-price-ceiling.yml', {{
+          price: document.getElementById('reg-price-ceiling').value
+        }})">GitHubで登録する</button>
+      </div>
+    </div>
+    <script>
+      function regOpen(template, fields) {{
+        var repo = {github_repo!r};
+        if (!repo) {{
+          alert('GitHubリポジトリ情報が取得できませんでした。Issuesタブから直接登録してください。');
+          return;
+        }}
+        var url = 'https://github.com/' + repo + '/issues/new?template=' + encodeURIComponent(template);
+        for (var key in fields) {{
+          var val = (fields[key] || '').trim();
+          if (!val) continue;
+          url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(val);
+        }}
+        window.open(url, '_blank');
+      }}
+    </script>
+    """
+
+
 def build_dashboard_html(results: list, holdings: list | None = None, ranking: list | None = None,
-                          ranking_price_ceiling: float | None = None) -> str:
+                          ranking_price_ceiling: float | None = None, github_repo: str | None = None) -> str:
     """
     results: ウォッチリストの [{"code", "name", "result"}, ...]
     holdings: 保有銘柄の [{"code", "name", "result"}, ...] (Noneまたは空リストなら非表示)
     ranking: 買い時ランキングの [{"code", "name", "result"}, ...] (Noneまたは空リストなら非表示)
     ranking_price_ceiling: ランキングの価格上限(表示用)
+    github_repo: "owner/repo" 形式のGitHubリポジトリ名(ダッシュボードからの登録フォーム用。Noneなら非表示)
     """
     now = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
     buy_count = sum(1 for i in results if i["result"]["direction"] == "BUY")
@@ -112,6 +188,8 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
         <h2>買い時ランキング（日経225・{ceiling_label}）</h2>
         {_table_html(ranking, with_rank=True) if ranking else _empty_state("条件に合う銘柄がありませんでした。")}
         """
+
+    registration_section = _registration_section_html(github_repo)
 
     return f"""<!doctype html>
 <html lang="ja">
@@ -154,6 +232,22 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   .reasons {{ color: var(--muted); font-size: 0.78rem; }}
   .empty {{ color: var(--muted); font-size: 0.85rem; padding: 16px; background: var(--card); border-radius: 10px; }}
   .disclaimer {{ margin-top: 24px; color: var(--muted); font-size: 0.75rem; line-height: 1.6; }}
+  .reg-desc {{ color: var(--muted); font-size: 0.82rem; line-height: 1.6; margin: 0 0 16px; }}
+  .reg-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
+  .reg-card {{
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  }}
+  .reg-card h3 {{ font-size: 0.85rem; margin: 0 0 2px; font-weight: 600; }}
+  .reg-card input {{
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--fg); font-size: 0.85rem;
+  }}
+  .reg-card button {{
+    padding: 8px 12px; border: none; border-radius: 6px; background: #1a73e8; color: #fff;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  }}
+  .reg-card button:hover {{ background: #1558b0; }}
   @media (max-width: 640px) {{
     table, thead, tbody, th, td, tr {{ display: block; }}
     thead {{ display: none; }}
@@ -172,6 +266,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     {watchlist_section}
     {holdings_section}
     {ranking_section}
+    {registration_section}
 
     <div class="disclaimer">
       本ダッシュボードはSMA/RSI/MACDなど一般的なテクニカル指標に基づく機械的な参考情報であり、

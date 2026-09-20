@@ -106,11 +106,14 @@ def main():
 
     if watch_results or holdings_results:
         os.makedirs("docs", exist_ok=True)
+        # GitHub Actions実行時は "owner/repo" が自動で環境変数に入っている
+        github_repo = os.environ.get("GITHUB_REPOSITORY")
         html = build_dashboard_html(
             watch_results,
             holdings=holdings_results,
             ranking=ranking_results,
             ranking_price_ceiling=RANKING_PRICE_CEILING,
+            github_repo=github_repo,
         )
         with open("docs/index.html", "w", encoding="utf-8") as f:
             f.write(html)
