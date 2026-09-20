@@ -1,0 +1,13 @@
+name: "② 保有銘柄を削除"
+description: "登録済みの保有銘柄を監視対象から外します"
+title: "[保有銘柄削除] "
+labels: ["remove-holding"]
+body:
+  - type: input
+    id: code
+    attributes:
+      label: 証券コード
+      description: "削除したい銘柄の証券コードを半角数字で入力してください（.Tは不要）"
+      placeholder: "7203"
+    validations:
+      required: true
