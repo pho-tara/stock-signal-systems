@@ -1,0 +1,139 @@
+name: 登録リクエストの処理
+
+# 「Issues」から作成された登録フォーム(保有銘柄の追加/削除、価格上限の変更)を
+# 自動的にファイルへ反映し、コミットしてIssueをクローズする。
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  handle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: Issue内容を解析してファイルを更新
+        id: apply
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            function extractField(body, label) {
+              const re = new RegExp("### " + label + "\\s*\\n\\n([^\\n]*)");
+              const m = body.match(re);
+              return m ? m[1].trim() : null;
+            }
+            function isEmpty(v) {
+              return !v || v.trim() === "" || v.trim() === "_No response_";
+            }
+            function normalizeCode(code) {
+              return code.trim().replace(/\.T$/i, "").toUpperCase();
+            }
+            function escapeForPython(s) {
+              return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+            }
+
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(l => l.name);
+            const body = (issue.body || "").replace(/\r\n/g, "\n");
+
+            let message = null;
+            let changed = false;
+
+            if (labels.includes("add-holding")) {
+              const rawCode = extractField(body, "証券コード");
+              const rawName = extractField(body, "銘柄名");
+              if (isEmpty(rawCode) || isEmpty(rawName)) {
+                message = "証券コードまたは銘柄名を読み取れませんでした。フォームの内容を確認してもう一度お試しください。";
+              } else {
+                const code = normalizeCode(rawCode);
+                const name = escapeForPython(rawName.trim());
+                let content = fs.readFileSync("holdings.py", "utf8");
+                if (content.includes(`"code": "${code}.T"`)) {
+                  message = `${rawName.trim()}(${code}) はすでに保有銘柄に登録されています。`;
+                } else {
+                  const entry = `    {"code": "${code}.T", "name": "${name}"},\n`;
+                  content = content.replace("HOLDINGS = [\n", "HOLDINGS = [\n" + entry);
+                  fs.writeFileSync("holdings.py", content);
+                  message = `${rawName.trim()}(${code}) を保有銘柄に追加しました。次回の自動実行からシグナル監視の対象になります。`;
+                  changed = true;
+                }
+              }
+            } else if (labels.includes("remove-holding")) {
+              const rawCode = extractField(body, "証券コード");
+              if (isEmpty(rawCode)) {
+                message = "証券コードを読み取れませんでした。フォームの内容を確認してもう一度お試しください。";
+              } else {
+                const code = normalizeCode(rawCode);
+                let content = fs.readFileSync("holdings.py", "utf8");
+                const lines = content.split("\n");
+                const newLines = lines.filter(line => !line.includes(`"code": "${code}.T"`));
+                if (newLines.length === lines.length) {
+                  message = `証券コード ${code} は保有銘柄に見つかりませんでした。`;
+                } else {
+                  fs.writeFileSync("holdings.py", newLines.join("\n"));
+                  message = `証券コード ${code} を保有銘柄から削除しました。`;
+                  changed = true;
+                }
+              }
+            } else if (labels.includes("set-price-ceiling")) {
+              const rawPrice = extractField(body, "価格上限（円）");
+              const num = parseInt((rawPrice || "").replace(/[,，円]/g, ""), 10);
+              if (!rawPrice || isNaN(num) || num <= 0) {
+                message = "価格を正しく読み取れませんでした。半角数字で入力してください（例: 1500）。";
+              } else {
+                let content = fs.readFileSync("analyze.py", "utf8");
+                if (!/RANKING_PRICE_CEILING = \d+/.test(content)) {
+                  message = "analyze.py内にRANKING_PRICE_CEILINGの設定が見つかりませんでした。";
+                } else {
+                  content = content.replace(/RANKING_PRICE_CEILING = \d+/, `RANKING_PRICE_CEILING = ${num}`);
+                  fs.writeFileSync("analyze.py", content);
+                  message = `買い時ランキングの価格上限を ${num.toLocaleString()}円 に変更しました。`;
+                  changed = true;
+                }
+              }
+            } else {
+              // 対象外のラベルのIssueは何もしない
+              core.exportVariable("REG_HANDLED", "false");
+              return;
+            }
+
+            core.exportVariable("REG_HANDLED", "true");
+            core.exportVariable("REG_CHANGED", changed ? "true" : "false");
+            fs.writeFileSync("/tmp/reg_message.txt", message, "utf8");
+
+      - name: 変更をコミット
+        if: env.REG_HANDLED == 'true' && env.REG_CHANGED == 'true'
+        run: |
+          git config user.name "stock-signal-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add holdings.py analyze.py
+          git diff --cached --quiet || git commit -m "Update settings via issue #${{ github.event.issue.number }}"
+          git push
+
+      - name: Issueにコメントしてクローズ
+        if: env.REG_HANDLED == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const message = fs.readFileSync('/tmp/reg_message.txt', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: message,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: "closed",
+            });
