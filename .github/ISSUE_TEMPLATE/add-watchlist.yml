@@ -1,0 +1,21 @@
+name: "④ 監視銘柄を追加"
+description: "気になっている銘柄をウォッチリストに追加します（保有はしていない銘柄向け）"
+title: "[監視銘柄登録] "
+labels: ["add-watchlist"]
+body:
+  - type: input
+    id: code
+    attributes:
+      label: 証券コード
+      description: "東証の証券コードを半角数字で入力してください（.Tは不要）"
+      placeholder: "7203"
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: 銘柄名
+      description: "わかりやすい名前を入力してください"
+      placeholder: "トヨタ自動車"
+    validations:
+      required: true
