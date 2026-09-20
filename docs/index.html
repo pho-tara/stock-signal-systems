@@ -18,8 +18,10 @@
   }
   .wrap { max-width: 960px; margin: 0 auto; }
   h1 { font-size: 1.4rem; margin: 0 0 4px; }
-  .updated { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
-  .summary { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  h2 { font-size: 1.05rem; margin: 32px 0 12px; }
+  h2:first-of-type { margin-top: 20px; }
+  .updated { color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }
+  .summary { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
   .stat {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 16px; min-width: 120px;
@@ -30,10 +32,12 @@
   th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-align: left; }
   th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.rank { font-weight: 700; color: var(--muted); }
   .name-cell .name { font-weight: 600; }
   .name-cell .code { color: var(--muted); font-size: 0.75rem; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }
   .reasons { color: var(--muted); font-size: 0.78rem; }
+  .empty { color: var(--muted); font-size: 0.85rem; padding: 16px; background: var(--card); border-radius: 10px; }
   .disclaimer { margin-top: 24px; color: var(--muted); font-size: 0.75rem; line-height: 1.6; }
   @media (max-width: 640px) {
     table, thead, tbody, th, td, tr { display: block; }
@@ -48,14 +52,16 @@
 <body>
   <div class="wrap">
     <h1>日本株テクニカルシグナル ダッシュボード</h1>
-    <div class="updated">最終更新: 2026-09-18 15:51 JST</div>
+    <div class="updated">最終更新: 2026-09-20 12:58 JST</div>
 
+    
+    <h2>ウォッチリスト</h2>
     <div class="summary">
       <div class="stat"><div class="num">10</div><div class="label">監視銘柄数</div></div>
       <div class="stat"><div class="num" style="color:#0f9d58">2</div><div class="label">買いシグナル</div></div>
       <div class="stat"><div class="num" style="color:#d93025">1</div><div class="label">売りシグナル</div></div>
     </div>
-
+    
     <table>
       <thead>
         <tr>
@@ -65,6 +71,7 @@
       <tbody>
         
     <tr>
+      
       <td class="name-cell">
         <div class="name">トヨタ自動車</div>
         <div class="code">7203.T</div>
@@ -73,16 +80,13 @@
       <td class="num">3,024.2</td>
       <td class="num">3,062.2</td>
       <td class="num">48.7</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">ソフトバンクグループ</div>
         <div class="code">9984.T</div>
@@ -91,16 +95,13 @@
       <td class="num">6,172.6</td>
       <td class="num">5,717.8</td>
       <td class="num">56.9</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">ソニーグループ</div>
         <div class="code">6758.T</div>
@@ -109,16 +110,13 @@
       <td class="num">3,736.6</td>
       <td class="num">3,795.3</td>
       <td class="num">46.8</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">三菱UFJフィナンシャル・グループ</div>
         <div class="code">8306.T</div>
@@ -127,16 +125,13 @@
       <td class="num">3,663.0</td>
       <td class="num">3,633.4</td>
       <td class="num">48.6</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">日本電信電話(NTT)</div>
         <div class="code">9432.T</div>
@@ -145,16 +140,13 @@
       <td class="num">178.2</td>
       <td class="num">171.0</td>
       <td class="num">64.0</td>
-      <td>
-        <span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">
-          売りシグナル（強）
-        </span>
-      </td>
+      <td><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">売りシグナル（強）</span></td>
       <td class="reasons">RSIが70を下抜け(買われすぎからの反落)・MACDがシグナルを下抜け(デッドクロス)</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">日立製作所</div>
         <div class="code">6501.T</div>
@@ -163,16 +155,13 @@
       <td class="num">5,383.4</td>
       <td class="num">5,347.4</td>
       <td class="num">59.3</td>
-      <td>
-        <span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">
-          買いシグナル（強）
-        </span>
-      </td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル（強）</span></td>
       <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)・MACDがシグナルを上抜け(ゴールデンクロス)</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">東京エレクトロン</div>
         <div class="code">8035.T</div>
@@ -181,16 +170,13 @@
       <td class="num">51,470.0</td>
       <td class="num">54,161.6</td>
       <td class="num">45.5</td>
-      <td>
-        <span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">
-          買いシグナル
-        </span>
-      </td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
       <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">信越化学工業</div>
         <div class="code">4063.T</div>
@@ -199,16 +185,13 @@
       <td class="num">5,773.8</td>
       <td class="num">5,922.4</td>
       <td class="num">44.0</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">KDDI</div>
         <div class="code">9433.T</div>
@@ -217,16 +200,13 @@
       <td class="num">3,072.4</td>
       <td class="num">2,961.4</td>
       <td class="num">60.1</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
 
     <tr>
+      
       <td class="name-cell">
         <div class="name">本田技研工業</div>
         <div class="code">7267.T</div>
@@ -235,16 +215,329 @@
       <td class="num">1,687.2</td>
       <td class="num">1,689.9</td>
       <td class="num">53.2</td>
-      <td>
-        <span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">
-          様子見
-        </span>
-      </td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
     </tr>
     
       </tbody>
     </table>
+    
+    
+    
+    
+        <h2>買い時ランキング（日経225・1,500円以下）</h2>
+        
+    <table>
+      <thead>
+        <tr>
+          <th>順位</th><th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+    <tr>
+      <td class="num rank">1</td>
+      <td class="name-cell">
+        <div class="name">パン・パシフィック・インターナショナルホールディングス</div>
+        <div class="code">7532.T</div>
+      </td>
+      <td class="num">713.0</td>
+      <td class="num">724.2</td>
+      <td class="num">785.0</td>
+      <td class="num">28.3</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
+      <td class="reasons">RSIが売られすぎ水準(28.3)</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">2</td>
+      <td class="name-cell">
+        <div class="name">日産自動車</div>
+        <div class="code">7201.T</div>
+      </td>
+      <td class="num">312.3</td>
+      <td class="num">312.9</td>
+      <td class="num">319.6</td>
+      <td class="num">45.1</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
+      <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">3</td>
+      <td class="name-cell">
+        <div class="name">日本精工</div>
+        <div class="code">6471.T</div>
+      </td>
+      <td class="num">1,082.0</td>
+      <td class="num">1,063.5</td>
+      <td class="num">1,097.7</td>
+      <td class="num">46.1</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
+      <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">4</td>
+      <td class="name-cell">
+        <div class="name">NTN</div>
+        <div class="code">6472.T</div>
+      </td>
+      <td class="num">384.8</td>
+      <td class="num">378.8</td>
+      <td class="num">377.3</td>
+      <td class="num">53.9</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
+      <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">5</td>
+      <td class="name-cell">
+        <div class="name">ARCHION</div>
+        <div class="code">543A.T</div>
+      </td>
+      <td class="num">284.0</td>
+      <td class="num">277.0</td>
+      <td class="num">276.4</td>
+      <td class="num">56.3</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
+      <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">6</td>
+      <td class="name-cell">
+        <div class="name">ニッスイ</div>
+        <div class="code">1332.T</div>
+      </td>
+      <td class="num">1,163.0</td>
+      <td class="num">1,189.7</td>
+      <td class="num">1,247.8</td>
+      <td class="num">34.2</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">7</td>
+      <td class="name-cell">
+        <div class="name">楽天グループ</div>
+        <div class="code">4755.T</div>
+      </td>
+      <td class="num">708.3</td>
+      <td class="num">720.9</td>
+      <td class="num">749.6</td>
+      <td class="num">37.0</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">8</td>
+      <td class="name-cell">
+        <div class="name">東急不動産ホールディングス</div>
+        <div class="code">3289.T</div>
+      </td>
+      <td class="num">1,280.0</td>
+      <td class="num">1,288.9</td>
+      <td class="num">1,315.6</td>
+      <td class="num">41.2</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">9</td>
+      <td class="name-cell">
+        <div class="name">イオン</div>
+        <div class="code">8267.T</div>
+      </td>
+      <td class="num">1,313.5</td>
+      <td class="num">1,341.4</td>
+      <td class="num">1,364.4</td>
+      <td class="num">41.4</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">10</td>
+      <td class="name-cell">
+        <div class="name">ヤマハ</div>
+        <div class="code">7951.T</div>
+      </td>
+      <td class="num">1,249.0</td>
+      <td class="num">1,258.4</td>
+      <td class="num">1,292.5</td>
+      <td class="num">43.6</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">11</td>
+      <td class="name-cell">
+        <div class="name">サイバーエージェント</div>
+        <div class="code">4751.T</div>
+      </td>
+      <td class="num">1,260.0</td>
+      <td class="num">1,262.0</td>
+      <td class="num">1,285.0</td>
+      <td class="num">43.6</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">12</td>
+      <td class="name-cell">
+        <div class="name">三井不動産</div>
+        <div class="code">8801.T</div>
+      </td>
+      <td class="num">1,485.0</td>
+      <td class="num">1,486.2</td>
+      <td class="num">1,498.4</td>
+      <td class="num">46.2</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">13</td>
+      <td class="name-cell">
+        <div class="name">京王電鉄</div>
+        <div class="code">9008.T</div>
+      </td>
+      <td class="num">780.4</td>
+      <td class="num">798.6</td>
+      <td class="num">785.0</td>
+      <td class="num">46.7</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">14</td>
+      <td class="name-cell">
+        <div class="name">マツダ</div>
+        <div class="code">7261.T</div>
+      </td>
+      <td class="num">1,157.0</td>
+      <td class="num">1,156.9</td>
+      <td class="num">1,178.7</td>
+      <td class="num">48.2</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">15</td>
+      <td class="name-cell">
+        <div class="name">カナデビア</div>
+        <div class="code">7004.T</div>
+      </td>
+      <td class="num">1,176.0</td>
+      <td class="num">1,169.6</td>
+      <td class="num">1,179.2</td>
+      <td class="num">48.8</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">16</td>
+      <td class="name-cell">
+        <div class="name">東レ</div>
+        <div class="code">3402.T</div>
+      </td>
+      <td class="num">1,248.0</td>
+      <td class="num">1,249.5</td>
+      <td class="num">1,269.9</td>
+      <td class="num">48.9</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">17</td>
+      <td class="name-cell">
+        <div class="name">シャープ</div>
+        <div class="code">6753.T</div>
+      </td>
+      <td class="num">648.8</td>
+      <td class="num">672.5</td>
+      <td class="num">647.8</td>
+      <td class="num">49.1</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">18</td>
+      <td class="name-cell">
+        <div class="name">三菱ケミカルグループ</div>
+        <div class="code">4188.T</div>
+      </td>
+      <td class="num">1,189.0</td>
+      <td class="num">1,181.2</td>
+      <td class="num">1,185.1</td>
+      <td class="num">50.3</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">19</td>
+      <td class="name-cell">
+        <div class="name">SHIFT</div>
+        <div class="code">3697.T</div>
+      </td>
+      <td class="num">881.1</td>
+      <td class="num">874.6</td>
+      <td class="num">899.6</td>
+      <td class="num">50.9</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">20</td>
+      <td class="name-cell">
+        <div class="name">コニカミノルタ</div>
+        <div class="code">4902.T</div>
+      </td>
+      <td class="num">641.2</td>
+      <td class="num">636.4</td>
+      <td class="num">640.2</td>
+      <td class="num">51.8</td>
+      <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
+      <td class="reasons">特筆すべき根拠なし</td>
+    </tr>
+    
+      </tbody>
+    </table>
+    
+        
 
     <div class="disclaimer">
       本ダッシュボードはSMA/RSI/MACDなど一般的なテクニカル指標に基づく機械的な参考情報であり、
