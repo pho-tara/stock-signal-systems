@@ -1,0 +1,21 @@
+name: "① 保有銘柄を追加"
+description: "保有している銘柄をダッシュボード・シグナル監視に追加します"
+title: "[保有銘柄登録] "
+labels: ["add-holding"]
+body:
+  - type: input
+    id: code
+    attributes:
+      label: 証券コード
+      description: "東証の証券コードを半角数字で入力してください（.Tは不要）"
+      placeholder: "7203"
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: 銘柄名
+      description: "わかりやすい名前を入力してください"
+      placeholder: "トヨタ自動車"
+    validations:
+      required: true
