@@ -16,9 +16,15 @@ stock-signal-system/
 ├── notify.py                # LINE Messaging APIへの通知送信
 ├── dashboard.py             # HTMLダッシュボード生成
 ├── watchlist.py             # 監視銘柄リスト（編集はここだけでOK）
-├── test_logic.py             # ロジックの単体テスト（ネット接続不要）
+├── holdings.py               # 保有銘柄リスト（Issueフォームからも編集可能）
+├── nikkei225.py              # 買い時ランキングの対象ユニバース（日経225）
+├── ranking.py                # 買い時ランキングのロジック
+├── test_logic.py             # シグナル判定ロジックの単体テスト（ネット接続不要）
+├── test_ranking_logic.py      # ランキングロジックの単体テスト（ネット接続不要）
 ├── requirements.txt
-├── .github/workflows/stock-check.yml   # 自動実行の設定
+├── .github/workflows/stock-check.yml         # 自動実行の設定
+├── .github/workflows/handle-registration.yml # Issueフォームからの登録処理
+├── .github/ISSUE_TEMPLATE/                    # 保有銘柄登録などのIssueフォーム
 └── docs/index.html           # 生成されるダッシュボード(GitHub Pagesで公開)
 ```
 
@@ -75,6 +81,25 @@ LINE Notifyは2025年3月末で終了しているため、後継のLINE Messagin
 ## 監視銘柄のカスタマイズ
 
 `watchlist.py` を編集して銘柄コードと名称を追加・削除してください。証券コードの後ろに `.T` を付けた形式です（例: トヨタ自動車なら `7203.T`）。
+
+## 保有銘柄の登録・買い時ランキングの設定（Issueフォームから操作可能）
+
+コードを直接編集しなくても、GitHubの「Issues」タブからフォームで登録・変更ができます。
+
+1. リポジトリの「Issues」タブ →「New issue」
+2. 用意されているテンプレートから選択
+   - **① 保有銘柄を追加**: 証券コードと銘柄名を入力すると、`holdings.py` に自動追加されます
+   - **② 保有銘柄を削除**: 証券コードを入力すると、`holdings.py` から自動削除されます
+   - **③ 買い時ランキングの価格上限を変更**: 金額を入力すると、`analyze.py` の`RANKING_PRICE_CEILING`が自動更新されます
+3. 「Submit new issue」を押すと、数十秒後に自動でファイルが更新され、Issueにコメントが付いて自動的にクローズされます（`.github/workflows/handle-registration.yml` が処理しています）
+
+保有銘柄として登録された銘柄は、ウォッチリストとは別に「保有銘柄」セクションとしてダッシュボードに表示され、シグナル（買い/売り）が出るとLINE通知にも `[保有]` として含まれます（LINE通知を設定している場合）。
+
+もちろん、`holdings.py` や `analyze.py` を直接編集する方法でも問題ありません。
+
+## 買い時ランキングについて
+
+日経225の構成銘柄（`nikkei225.py`）の中から、株価が指定した上限（デフォルト1500円）以下の銘柄を対象に、シグナル判定ロジックによる「買いの根拠の強さ」でランキングを作成し、ダッシュボードに上位20件を表示します。日経225の構成銘柄は入れ替えがあるため、`nikkei225.py` は定期的な見直しが必要です。
 
 ## シグナル判定ロジックについて
 
