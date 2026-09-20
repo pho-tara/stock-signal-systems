@@ -2,9 +2,16 @@ name: 日本株テクニカルシグナルチェック
 
 on:
   schedule:
+    # 日本の株式データは日足なので、1日に何度も実行しても新しい情報は増えません。
+    # 前場開始前(JST 8:00)と後場終了後(JST 15:40)の平日2回に設定しています。
     - cron: "0 23 * * 0-4"   # JST 08:00 (月〜金)
     - cron: "40 6 * * 1-5"   # JST 15:40 (月〜金)
-  workflow_dispatch: {}
+  workflow_dispatch:          # Actionsタブから手動実行もできるようにする
+    inputs:
+      use_ai_news:
+        description: "ニュース判定にAI(Claude API)を使う(追加費用が発生します。未チェックなら無料のキーワード判定)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -27,6 +34,11 @@ jobs:
       - name: 分析を実行してLINE通知・ダッシュボード更新
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # 平日朝8:00の定期実行(cron "0 23 * * 0-4")のときだけAI判定を使い、
+          # それ以外(15:40の定期実行・手動実行)は無料のキーワード判定にしてコストを抑える。
+          # 手動実行時は use_ai_news にチェックを入れるとAI判定を試せる。
+          USE_AI_NEWS: ${{ (github.event.schedule == '0 23 * * 0-4') || (github.event.inputs.use_ai_news == 'true') }}
         run: python analyze.py
 
       - name: ダッシュボードの変更をコミット
