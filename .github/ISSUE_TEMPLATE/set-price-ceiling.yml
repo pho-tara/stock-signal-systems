@@ -1,0 +1,13 @@
+name: "③ 買い時ランキングの価格上限を変更"
+description: "日経225ランキングで対象とする株価の上限（円）を変更します"
+title: "[価格上限変更] "
+labels: ["set-price-ceiling"]
+body:
+  - type: input
+    id: price
+    attributes:
+      label: "価格上限（円）"
+      description: "この価格以下の銘柄のみをランキング対象にします。半角数字で入力してください"
+      placeholder: "1500"
+    validations:
+      required: true
