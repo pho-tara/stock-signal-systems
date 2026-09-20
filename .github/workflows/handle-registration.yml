@@ -83,6 +83,42 @@ jobs:
                   changed = true;
                 }
               }
+            } else if (labels.includes("add-watchlist")) {
+              const rawCode = extractField(body, "証券コード");
+              const rawName = extractField(body, "銘柄名");
+              if (isEmpty(rawCode) || isEmpty(rawName)) {
+                message = "証券コードまたは銘柄名を読み取れませんでした。フォームの内容を確認してもう一度お試しください。";
+              } else {
+                const code = normalizeCode(rawCode);
+                const name = escapeForPython(rawName.trim());
+                let content = fs.readFileSync("watchlist.py", "utf8");
+                if (content.includes(`"code": "${code}.T"`)) {
+                  message = `${rawName.trim()}(${code}) はすでに監視銘柄に登録されています。`;
+                } else {
+                  const entry = `    {"code": "${code}.T", "name": "${name}"},\n`;
+                  content = content.replace("WATCHLIST = [\n", "WATCHLIST = [\n" + entry);
+                  fs.writeFileSync("watchlist.py", content);
+                  message = `${rawName.trim()}(${code}) を監視銘柄に追加しました。次回の自動実行からシグナル監視の対象になります。`;
+                  changed = true;
+                }
+              }
+            } else if (labels.includes("remove-watchlist")) {
+              const rawCode = extractField(body, "証券コード");
+              if (isEmpty(rawCode)) {
+                message = "証券コードを読み取れませんでした。フォームの内容を確認してもう一度お試しください。";
+              } else {
+                const code = normalizeCode(rawCode);
+                let content = fs.readFileSync("watchlist.py", "utf8");
+                const lines = content.split("\n");
+                const newLines = lines.filter(line => !line.includes(`"code": "${code}.T"`));
+                if (newLines.length === lines.length) {
+                  message = `証券コード ${code} は監視銘柄に見つかりませんでした。`;
+                } else {
+                  fs.writeFileSync("watchlist.py", newLines.join("\n"));
+                  message = `証券コード ${code} を監視銘柄から削除しました。`;
+                  changed = true;
+                }
+              }
             } else if (labels.includes("set-price-ceiling")) {
               const rawPrice = extractField(body, "価格上限（円）");
               const num = parseInt((rawPrice || "").replace(/[,，円]/g, ""), 10);
@@ -114,7 +150,7 @@ jobs:
         run: |
           git config user.name "stock-signal-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add holdings.py analyze.py
+          git add holdings.py watchlist.py analyze.py
           git diff --cached --quiet || git commit -m "Update settings via issue #${{ github.event.issue.number }}"
           git push
 
