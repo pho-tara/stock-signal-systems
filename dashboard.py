@@ -4,6 +4,7 @@
 静的HTMLダッシュボードを生成する。
 GitHub Pages (docs/index.html) での公開を想定。
 """
+import html
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -13,6 +14,12 @@ BADGE_STYLE = {
     "BUY": ("#0f9d58", "買いシグナル"),
     "SELL": ("#d93025", "売りシグナル"),
     "NONE": ("#9aa0a6", "様子見"),
+}
+
+NEWS_BADGE_STYLE = {
+    "POSITIVE": ("#0f9d58", "ポジティブ"),
+    "NEGATIVE": ("#d93025", "ネガティブ"),
+    "NEUTRAL": ("#9aa0a6", "中立"),
 }
 
 
@@ -28,6 +35,27 @@ def _badge_html(r: dict) -> str:
     return (
         f'<span class="badge" style="background:{color}22;color:{color};border:1px solid {color}55;">'
         f"{label}{strong}</span>"
+    )
+
+
+def _news_badge_html(news: dict | None) -> str:
+    """ニュースのポジティブ/ネガティブ判定バッジ(キーワードベース、または任意でAI判定・参考情報)。"""
+    if not news:
+        return '<span class="muted">—</span>'
+    sentiment = news.get("sentiment", "NEUTRAL")
+    color, label = NEWS_BADGE_STYLE.get(sentiment, NEWS_BADGE_STYLE["NEUTRAL"])
+    method_tag = '<span class="method-tag">AI</span>' if news.get("method") == "AI" else ""
+    badge = (
+        f'<span class="badge" style="background:{color}22;color:{color};border:1px solid {color}55;">'
+        f"{label}</span>{method_tag}"
+    )
+    headline = news.get("sample_headline")
+    if not headline:
+        return badge
+    short = headline if len(headline) <= 38 else headline[:37] + "…"
+    return (
+        f"{badge}"
+        f'<div class="news-headline" title="{html.escape(headline)}">{html.escape(short)}</div>'
     )
 
 
@@ -49,6 +77,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td class="num">{_fmt(latest['rsi14'], 1)}</td>
       <td>{_badge_html(r)}</td>
       <td class="reasons">{reasons}</td>
+      <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
     </tr>
     """
 
@@ -62,7 +91,7 @@ def _table_html(items: list, with_rank: bool = False) -> str:
     <table>
       <thead>
         <tr>
-          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th>
+          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th><th>ニュース</th>
         </tr>
       </thead>
       <tbody>
@@ -230,6 +259,14 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   .name-cell .code {{ color: var(--muted); font-size: 0.75rem; }}
   .badge {{ display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }}
   .reasons {{ color: var(--muted); font-size: 0.78rem; }}
+  .news-cell {{ min-width: 140px; }}
+  .news-headline {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
+  .muted {{ color: var(--muted); }}
+  .method-tag {{
+    display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px;
+    font-size: 0.6rem; font-weight: 700; vertical-align: middle;
+    background: #1a73e822; color: #1a73e8; border: 1px solid #1a73e855;
+  }}
   .empty {{ color: var(--muted); font-size: 0.85rem; padding: 16px; background: var(--card); border-radius: 10px; }}
   .disclaimer {{ margin-top: 24px; color: var(--muted); font-size: 0.75rem; line-height: 1.6; }}
   .reg-desc {{ color: var(--muted); font-size: 0.82rem; line-height: 1.6; margin: 0 0 16px; }}
@@ -270,7 +307,11 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
 
     <div class="disclaimer">
       本ダッシュボードはSMA/RSI/MACDなど一般的なテクニカル指標に基づく機械的な参考情報であり、
-      投資助言ではありません。将来の値動きを保証するものではなく、投資判断はご自身の責任で行ってください。
+      投資助言ではありません。将来の値動きを保証するものではなく、投資判断はご自身の責任で行ってください。<br>
+      「ニュース」列は、Googleニュースの見出しに含まれるキーワード(好材料/悪材料に関する単語)を
+      機械的に数えただけの簡易判定であり、文脈やニュアンスは考慮されていません
+      (「AI」表示がある場合はAI(Claude API)による判定です)。
+      判定結果・シグナルの強さには一切影響しないただの参考表示です。
     </div>
   </div>
 </body>

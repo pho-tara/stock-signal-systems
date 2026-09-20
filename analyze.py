@@ -6,8 +6,10 @@
 1. watchlist.py の銘柄について yfinance で株価データを取得・指標計算・シグナル判定
 2. holdings.py の保有銘柄についても同様に判定(登録があれば)
 3. nikkei225.py のユニバースから、価格上限以下で「買い時」な銘柄をランキング
-4. BUYまたはSELLが出た銘柄(ウォッチリスト・保有銘柄)があればLINEへ通知
-5. すべての結果を docs/index.html に書き出す(GitHub Pagesで公開)
+4. ダッシュボードに表示する銘柄(ウォッチリスト・保有銘柄・ランキング上位)について、
+   Googleニュースの見出しからキーワードベースでポジティブ/ネガティブを判定(無料・参考情報)
+5. BUYまたはSELLが出た銘柄(ウォッチリスト・保有銘柄)があればLINEへ通知
+6. すべての結果を docs/index.html に書き出す(GitHub Pagesで公開)
 
 実行方法:
     pip install -r requirements.txt
@@ -29,6 +31,7 @@ from signals import evaluate_signal
 from notify import send_line_broadcast
 from dashboard import build_dashboard_html
 from ranking import build_ranking
+from news_sentiment import attach_news_sentiment
 
 MIN_ROWS_REQUIRED = 80  # SMA75計算に必要な最低営業日数
 
@@ -96,6 +99,24 @@ def main():
         )
     except Exception as e:
         print(f"[warn] ランキング生成に失敗しました: {e}", file=sys.stderr)
+        traceback.print_exc()
+
+    # ダッシュボードに実際に表示される銘柄だけニュース判定する
+    # (日経225全銘柄ではなく、ランキング上位N件・ウォッチリスト・保有銘柄のみ。
+    #  無料のGoogleニュース検索を使うため、件数を絞ってリクエスト数を抑える)
+    #
+    # USE_AI_NEWS=true の場合のみ、Claude API(Haiku)によるAI判定を使う。
+    # コスト削減のため、通常はGitHub Actions側で「平日朝の実行だけtrue」に
+    # なるよう .github/workflows/stock-check.yml で設定している。
+    # false、またはAPIキー未設定・呼び出し失敗時は無料のキーワード判定を使う。
+    use_ai_news = os.environ.get("USE_AI_NEWS", "").strip().lower() == "true"
+    print(f"[info] ニュース判定方式: {'AI(Claude API)' if use_ai_news else 'キーワードベース(無料)'}")
+    try:
+        attach_news_sentiment(watch_results, use_ai=use_ai_news)
+        attach_news_sentiment(holdings_results, use_ai=use_ai_news)
+        attach_news_sentiment(ranking_results, use_ai=use_ai_news)
+    except Exception as e:
+        print(f"[warn] ニュース判定処理に失敗しました: {e}", file=sys.stderr)
         traceback.print_exc()
 
     if notify_lines:
