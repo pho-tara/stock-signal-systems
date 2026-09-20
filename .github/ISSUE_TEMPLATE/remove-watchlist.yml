@@ -1,0 +1,13 @@
+name: "⑤ 監視銘柄を削除"
+description: "登録済みの監視銘柄をウォッチリストから外します"
+title: "[監視銘柄削除] "
+labels: ["remove-watchlist"]
+body:
+  - type: input
+    id: code
+    attributes:
+      label: 証券コード
+      description: "削除したい銘柄の証券コードを半角数字で入力してください（.Tは不要）"
+      placeholder: "7203"
+    validations:
+      required: true
