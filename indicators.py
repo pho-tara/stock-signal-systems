@@ -40,6 +40,8 @@ def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
 def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     OHLCVデータフレーム(Close列必須)にすべてのテクニカル指標列を追加して返す。
+    Volume列がある場合は、出来高の20日移動平均(VOL_SMA20)も追加する
+    (クロス系シグナルが出来高の増加を伴っているかの確認に使う)。
     """
     out = df.copy()
     out["SMA5"] = sma(out["Close"], 5)
@@ -50,4 +52,8 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     out["MACD"] = macd_line
     out["MACD_SIGNAL"] = signal_line
     out["MACD_HIST"] = hist
+    if "Volume" in out.columns:
+        out["VOL_SMA20"] = out["Volume"].rolling(window=20, min_periods=20).mean()
+    else:
+        out["VOL_SMA20"] = float("nan")
     return out

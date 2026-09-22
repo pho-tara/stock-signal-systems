@@ -59,6 +59,15 @@ def _news_badge_html(news: dict | None) -> str:
     )
 
 
+def _cautions_html(r: dict) -> str:
+    """長期トレンド(SMA75)に逆行するシグナルの注意書き(参考情報、scoreには影響しない)。"""
+    cautions = r.get("cautions") or []
+    if not cautions:
+        return ""
+    text = "・".join(cautions)
+    return f'<div class="caution">⚠ {html.escape(text)}</div>'
+
+
 def _row_html(item: dict, rank: int | None = None) -> str:
     r = item["result"]
     latest = r["latest"]
@@ -76,7 +85,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td class="num">{_fmt(latest['sma25'], 1)}</td>
       <td class="num">{_fmt(latest['rsi14'], 1)}</td>
       <td>{_badge_html(r)}</td>
-      <td class="reasons">{reasons}</td>
+      <td class="reasons">{reasons}{_cautions_html(r)}</td>
       <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
     </tr>
     """
@@ -259,6 +268,8 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   .name-cell .code {{ color: var(--muted); font-size: 0.75rem; }}
   .badge {{ display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }}
   .reasons {{ color: var(--muted); font-size: 0.78rem; }}
+  .caution {{ color: #b45309; font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
+  @media (prefers-color-scheme: dark) {{ .caution {{ color: #fbbf24; }} }}
   .news-cell {{ min-width: 140px; }}
   .news-headline {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
   .muted {{ color: var(--muted); }}
@@ -308,8 +319,12 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     <div class="disclaimer">
       本ダッシュボードはSMA/RSI/MACDなど一般的なテクニカル指標に基づく機械的な参考情報であり、
       投資助言ではありません。将来の値動きを保証するものではなく、投資判断はご自身の責任で行ってください。<br>
-      「ニュース」列は、Googleニュースの見出しに含まれるキーワード(好材料/悪材料に関する単語)を
-      機械的に数えただけの簡易判定であり、文脈やニュアンスは考慮されていません
+      「⚠」の注意書きは、長期トレンド(SMA75)と逆方向のシグナルである場合に表示される参考情報です
+      (シグナルの強さ自体には影響しませんが、LINE通知の要否判定には使われます)。<br>
+      LINE通知は、根拠が2つ以上そろった場合のみ送信されます(長期トレンドに逆行する注意がある場合は3つ以上)。
+      ダッシュボードにはそれ未満のシグナルも引き続きすべて表示されます。<br>
+      「ニュース」列は、Googleニュースの見出しに含まれるキーワード(好材料/悪材料に関する単語)の有無を
+      見出し単位で多数決しただけの簡易判定であり、文脈やニュアンスは考慮されていません
       (「AI」表示がある場合はAI(Claude API)による判定です)。
       判定結果・シグナルの強さには一切影響しないただの参考表示です。
     </div>

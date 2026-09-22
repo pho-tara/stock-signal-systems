@@ -6,12 +6,22 @@
 - ゴールデンクロス/デッドクロス(SMA5とSMA25)
 - RSIの売られすぎ/買われすぎからの回復
 - MACDのクロス
-の3系統をそれぞれ判定し、複数が同時に成立するほど「強いシグナル」として扱う。
+の3系統をそれぞれ判定し、複数が同時に成立するほど「強いシグナル」として扱う(score)。
+
+これに加えて、参考情報として以下の2つを付加する(scoreには影響しない別枠の情報):
+- 出来高確認: クロス系シグナル発生時に出来高が20日平均を大きく上回っていれば、
+  そのクロスの信頼度が高いとみなし、根拠(reasons)に追加してscoreを加点する。
+- トレンド注意(cautions): 長期線(SMA75)に対して逆行する方向のシグナルが出た場合
+  (下降トレンド中のBUY、上昇トレンド中のSELL)、「見せかけの反発/一時的な調整」の
+  可能性がある注意書きを追加する。こちらはscoreには加減算しないが、
+  trend_cautionフラグとして呼び出し側(通知要否の判定など)から参照できるようにする。
 
 これは一般的なテクニカル分析の手法を組み合わせたものであり、
 将来の値動きを保証するものではない。投資判断は自己責任で行うこと。
 """
 import pandas as pd
+
+VOLUME_SURGE_RATIO = 1.5  # 20日平均出来高に対してこの倍率以上なら「出来高急増」とみなす
 
 
 def _crossed_above(series_a: pd.Series, series_b: pd.Series) -> bool:
@@ -51,11 +61,15 @@ def evaluate_signal(df: pd.DataFrame) -> dict:
     latest = df.iloc[-1]
     reasons_buy = []
     reasons_sell = []
+    golden_cross = _crossed_above(df["SMA5"], df["SMA25"])
+    dead_cross = _crossed_below(df["SMA5"], df["SMA25"])
+    macd_golden_cross = _crossed_above(df["MACD"], df["MACD_SIGNAL"])
+    macd_dead_cross = _crossed_below(df["MACD"], df["MACD_SIGNAL"])
 
     # 1) ゴールデンクロス/デッドクロス (SMA5 x SMA25)
-    if _crossed_above(df["SMA5"], df["SMA25"]):
+    if golden_cross:
         reasons_buy.append("ゴールデンクロス(SMA5がSMA25を上抜け)")
-    if _crossed_below(df["SMA5"], df["SMA25"]):
+    if dead_cross:
         reasons_sell.append("デッドクロス(SMA5がSMA25を下抜け)")
 
     # 2) RSIの売られすぎ/買われすぎからの回復
@@ -71,33 +85,67 @@ def evaluate_signal(df: pd.DataFrame) -> dict:
             reasons_buy.append(f"RSIが売られすぎ水準({rsi_series.iloc[-1]:.1f})")
 
     # 3) MACDクロス
-    if _crossed_above(df["MACD"], df["MACD_SIGNAL"]):
+    if macd_golden_cross:
         reasons_buy.append("MACDがシグナルを上抜け(ゴールデンクロス)")
-    if _crossed_below(df["MACD"], df["MACD_SIGNAL"]):
+    if macd_dead_cross:
         reasons_sell.append("MACDがシグナルを下抜け(デッドクロス)")
 
+    # 4) 出来高確認(参考加点): クロス発生時に出来高が20日平均を大きく
+    #    上回っていれば、そのクロスの信頼度が高いとみなして根拠を追加する。
+    #    (クロス自体が起きていない場合は出来高だけでは根拠にしない)
+    vol_ratio = None
+    volume = latest.get("Volume")
+    vol_sma20 = latest.get("VOL_SMA20")
+    if volume is not None and vol_sma20 is not None and not pd.isna(volume) and not pd.isna(vol_sma20) and vol_sma20 > 0:
+        vol_ratio = float(volume) / float(vol_sma20)
+        if vol_ratio >= VOLUME_SURGE_RATIO:
+            if golden_cross or macd_golden_cross:
+                reasons_buy.append(f"出来高急増を伴う(直近20日平均比{vol_ratio:.1f}倍)")
+            if dead_cross or macd_dead_cross:
+                reasons_sell.append(f"出来高急増を伴う(直近20日平均比{vol_ratio:.1f}倍)")
+
+    latest_close = float(latest["Close"])
+    sma75 = None if pd.isna(latest.get("SMA75")) else float(latest["SMA75"])
+    trend = None
+    if sma75 is not None:
+        trend = "UP" if latest_close > sma75 else "DOWN"
+
     latest_info = {
-        "close": float(latest["Close"]),
+        "close": latest_close,
         "sma5": None if pd.isna(latest.get("SMA5")) else float(latest["SMA5"]),
         "sma25": None if pd.isna(latest.get("SMA25")) else float(latest["SMA25"]),
-        "sma75": None if pd.isna(latest.get("SMA75")) else float(latest["SMA75"]),
+        "sma75": sma75,
         "rsi14": None if pd.isna(latest.get("RSI14")) else float(latest["RSI14"]),
         "macd": None if pd.isna(latest.get("MACD")) else float(latest["MACD"]),
         "macd_signal": None if pd.isna(latest.get("MACD_SIGNAL")) else float(latest["MACD_SIGNAL"]),
+        "trend": trend,
+        "vol_ratio": vol_ratio,
     }
 
     if len(reasons_buy) >= len(reasons_sell) and reasons_buy:
-        return {
-            "direction": "BUY",
-            "score": len(reasons_buy),
-            "reasons": reasons_buy,
-            "latest": latest_info,
-        }
-    if reasons_sell:
-        return {
-            "direction": "SELL",
-            "score": len(reasons_sell),
-            "reasons": reasons_sell,
-            "latest": latest_info,
-        }
-    return {"direction": "NONE", "score": 0, "reasons": [], "latest": latest_info}
+        direction, score, reasons = "BUY", len(reasons_buy), reasons_buy
+    elif reasons_sell:
+        direction, score, reasons = "SELL", len(reasons_sell), reasons_sell
+    else:
+        direction, score, reasons = "NONE", 0, []
+
+    # 5) トレンド注意(参考情報。scoreには影響させない):
+    #    長期トレンド(SMA75)と逆行する方向のシグナルは、
+    #    「見せかけの反発/一時的な調整」の可能性を注意書きとして添える。
+    cautions = []
+    trend_caution = False
+    if direction == "BUY" and trend == "DOWN":
+        cautions.append("長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。")
+        trend_caution = True
+    elif direction == "SELL" and trend == "UP":
+        cautions.append("長期トレンド(SMA75)は上向きです。下落が一時的な調整にとどまる可能性があります。")
+        trend_caution = True
+
+    return {
+        "direction": direction,
+        "score": score,
+        "reasons": reasons,
+        "cautions": cautions,
+        "trend_caution": trend_caution,
+        "latest": latest_info,
+    }

@@ -68,17 +68,38 @@ def fetch_headlines(company_name: str, max_items: int = MAX_HEADLINES) -> list:
         return []
 
 
+def _classify_headline(headline: str) -> str:
+    """1件の見出しを "POSITIVE" / "NEGATIVE" / "NEUTRAL" に分類する。
+
+    好材料・悪材料どちらのキーワードも含まない場合、または両方を含む場合
+    (例: "増益も一部事業で減益")は、判定が割れているためNEUTRAL扱いにする。
+    """
+    has_positive = any(kw in headline for kw in POSITIVE_KEYWORDS)
+    has_negative = any(kw in headline for kw in NEGATIVE_KEYWORDS)
+    if has_positive and not has_negative:
+        return "POSITIVE"
+    if has_negative and not has_positive:
+        return "NEGATIVE"
+    return "NEUTRAL"
+
+
 def score_headlines(headlines: list) -> dict:
-    """見出しのリストからポジティブ/ネガティブを判定する。"""
+    """見出しのリストからポジティブ/ネガティブを判定する。
+
+    見出し内のキーワード「出現回数」ではなく、見出し1件につき1票の多数決とする。
+    (例えば「増収増益」は"増収"と"増益"の両方に部分一致するが、
+    これは同じ1つの見出しなので1票としてしか数えない。以前の実装は
+    キーワードのヒット数をそのまま数えていたため、キーワードが重なりやすい
+    見出しの影響が不当に大きくなる問題があった)
+    """
     positive_hits = []
     negative_hits = []
     for headline in headlines:
-        for kw in POSITIVE_KEYWORDS:
-            if kw in headline:
-                positive_hits.append((headline, kw))
-        for kw in NEGATIVE_KEYWORDS:
-            if kw in headline:
-                negative_hits.append((headline, kw))
+        label = _classify_headline(headline)
+        if label == "POSITIVE":
+            positive_hits.append(headline)
+        elif label == "NEGATIVE":
+            negative_hits.append(headline)
 
     pos_count = len(positive_hits)
     neg_count = len(negative_hits)
@@ -92,9 +113,9 @@ def score_headlines(headlines: list) -> dict:
     # 表示用に、判定の根拠になった見出しを1件だけ添える
     sample_headline = None
     if sentiment == "POSITIVE" and positive_hits:
-        sample_headline = positive_hits[0][0]
+        sample_headline = positive_hits[0]
     elif sentiment == "NEGATIVE" and negative_hits:
-        sample_headline = negative_hits[0][0]
+        sample_headline = negative_hits[0]
     elif headlines:
         sample_headline = headlines[0]
 
@@ -191,7 +212,31 @@ def get_news_sentiment(company_name: str, use_ai: bool = False) -> dict:
 
 
 def attach_news_sentiment(items: list, use_ai: bool = False, sleep_seconds: float = 0.3) -> None:
-    """[{"code","name","result"}, ...] の各要素に item["news"] を追加する(破壊的更新)。"""
-    for item in items:
-        item["news"] = get_news_sentiment(item["name"], use_ai=use_ai)
-        time.sleep(sleep_seconds)
+    """[{"code","name","result"}, ...] の各要素に item["news"] を追加する(破壊的更新)。
+
+    ウォッチリスト・保有銘柄・ランキングなど複数のリストにまたがって
+    同じ銘柄が重複する場合は、attach_news_sentiment_for_lists() を使うと
+    ニュース取得・AI判定を1回にまとめて重複リクエストを削減できる。
+    """
+    attach_news_sentiment_for_lists(items, use_ai=use_ai, sleep_seconds=sleep_seconds)
+
+
+def attach_news_sentiment_for_lists(*item_lists, use_ai: bool = False, sleep_seconds: float = 0.3) -> None:
+    """複数の[{"code","name","result"}, ...]リストをまとめて処理する。
+
+    同じ銘柄コードがウォッチリスト・保有銘柄・ランキングなど複数のリストに
+    重複して登場する場合、1回の実行内ではニュース取得・AI判定を1回だけ行い、
+    結果を使い回す(無料枠のリクエスト数、およびAI利用時のトークン消費を節約する)。
+    """
+    cache: dict = {}
+    for items in item_lists:
+        for item in items:
+            code = item.get("code")
+            if code is not None and code in cache:
+                item["news"] = cache[code]
+                continue
+            news = get_news_sentiment(item["name"], use_ai=use_ai)
+            item["news"] = news
+            if code is not None:
+                cache[code] = news
+            time.sleep(sleep_seconds)

@@ -93,6 +93,10 @@ def build_ranking(universe: list, price_ceiling: float, top_n: int = 20) -> list
         r = item["result"]
         if r["direction"] == "BUY":
             base = 100 + r["score"]
+            # 長期トレンド(SMA75)に逆行する注意が出ているBUYは、
+            # 見せかけの反発の可能性があるため、同スコア帯の中では少し順位を下げる。
+            if r.get("trend_caution"):
+                base -= 1
         elif r["direction"] == "NONE":
             base = 0
         else:  # SELL

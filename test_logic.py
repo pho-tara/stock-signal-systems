@@ -17,6 +17,11 @@ def make_df(prices):
     return pd.DataFrame({"Close": prices}, index=idx)
 
 
+def make_df_with_volume(prices, volumes):
+    idx = pd.date_range("2025-01-01", periods=len(prices), freq="B")
+    return pd.DataFrame({"Close": prices, "Volume": volumes}, index=idx)
+
+
 def test_golden_cross_detected_at_the_moment_it_happens():
     np.random.seed(1)
     down = np.linspace(2000, 1500, 100) + np.random.normal(0, 2, 100)
@@ -73,6 +78,96 @@ def test_rsi_basic_bounds():
     print("下降トレンドRSI:", df_down["RSI14"].iloc[-1])
 
 
+def test_trend_caution_flagged_for_buy_against_long_term_downtrend():
+    """長期の下落トレンド中に発生したゴールデンクロス(BUY)は、
+    SMA75より終値が下にある(=長期トレンドは下向き)ため、
+    trend_cautionが立ち、cautionsに注意書きが入ることを確認する。
+    (scoreやdirection自体には影響しない、あくまで参考情報)"""
+    np.random.seed(10)
+    # 長い下落(120営業日)の後、ごく短い戻りでゴールデンクロスだけ起こす。
+    # SMA75は下落局面の高い価格を長く引きずるため、戻り始めた時点では
+    # 終値がSMA75をまだ大きく下回っている(=典型的な「下落トレンド中の戻り」)。
+    down = np.linspace(2000, 1000, 120) + np.random.normal(0, 2, 120)
+    up = np.linspace(1000, 1120, 12) + np.random.normal(0, 2, 12)
+    prices = np.concatenate([down, up])
+    df = add_all_indicators(make_df(prices))
+
+    cross_day = None
+    for i in range(80, len(df)):
+        sub = df.iloc[: i + 1]
+        if _crossed_above(sub["SMA5"], sub["SMA25"]):
+            cross_day = i
+            break
+    assert cross_day is not None, "テストデータでゴールデンクロスが発生していない"
+
+    result = evaluate_signal(df.iloc[: cross_day + 1])
+    print("=== 下落トレンド中の戻りで発生したBUYの判定 ===", result)
+    assert result["direction"] == "BUY"
+    assert result["latest"]["trend"] == "DOWN", result["latest"]
+    assert result["trend_caution"] is True, result
+    assert result["cautions"], "cautionsに注意書きが入っていない"
+
+
+def test_no_trend_caution_when_signal_aligns_with_trend():
+    """長期トレンドと同じ方向のシグナルには注意書きが付かないことを確認する。
+    緩やかな上昇トレンドに波(周期的な上下動)を重ねることで、
+    トレンドが既に上向き(SMA75より上)の状態でゴールデンクロスが
+    繰り返し発生する状況を作る(いわゆる「押し目からの再上昇」)。"""
+    np.random.seed(7)
+    n = 260
+    t = np.arange(n)
+    trend = 1000 + t * 3
+    wave = 60 * np.sin(t / 8.0)
+    noise = np.random.normal(0, 3, n)
+    prices = trend + wave + noise
+    df = add_all_indicators(make_df(prices))
+
+    checked_aligned_case = False
+    for i in range(120, len(df)):
+        sub = df.iloc[: i + 1]
+        if _crossed_above(sub["SMA5"], sub["SMA25"]):
+            result = evaluate_signal(sub)
+            if result["direction"] == "BUY" and result["latest"]["trend"] == "UP":
+                assert result["trend_caution"] is False, result
+                assert result["cautions"] == [], result
+                checked_aligned_case = True
+    assert checked_aligned_case, "トレンドと整合するゴールデンクロスがテストデータで発生していない"
+    print("=== トレンドと整合する場合はcautionが付かない ===")
+
+
+def test_volume_surge_adds_reason_and_boosts_score():
+    """クロス発生日に出来高が20日平均を大きく上回っていれば、
+    出来高確認の根拠が追加され、scoreも1つ増えることを確認する。"""
+    np.random.seed(1)
+    down = np.linspace(2000, 1500, 100) + np.random.normal(0, 2, 100)
+    up = np.linspace(1500, 2000, 40) + np.random.normal(0, 2, 40)
+    prices = np.concatenate([down, up])
+
+    cross_day = None
+    base_df = add_all_indicators(make_df(prices))
+    for i in range(30, len(base_df)):
+        sub = base_df.iloc[: i + 1]
+        if _crossed_above(sub["SMA5"], sub["SMA25"]):
+            cross_day = i
+            break
+    assert cross_day is not None
+
+    volumes = [1000] * len(prices)
+    volumes[cross_day] = 6000  # クロス当日だけ出来高が急増
+    df = add_all_indicators(make_df_with_volume(prices, volumes))
+
+    result_without_surge = evaluate_signal(base_df.iloc[: cross_day + 1])
+    result_with_surge = evaluate_signal(df.iloc[: cross_day + 1])
+    print("=== 出来高急増なし ===", result_without_surge)
+    print("=== 出来高急増あり ===", result_with_surge)
+
+    assert result_with_surge["direction"] == "BUY"
+    assert any("出来高急増" in r for r in result_with_surge["reasons"])
+    assert result_with_surge["score"] == result_without_surge["score"] + 1
+    assert result_with_surge["latest"]["vol_ratio"] is not None
+    assert result_with_surge["latest"]["vol_ratio"] >= 1.5
+
+
 def test_overbought_state_flagged_as_caution():
     # 急騰が続きRSIが極端な水準に達した場合は、過熱警戒(SELL寄り)として
     # 検出されることを確認する(仕様として意図した挙動)
@@ -92,5 +187,8 @@ if __name__ == "__main__":
     test_golden_cross_detected_at_the_moment_it_happens()
     test_dead_cross_detected_at_the_moment_it_happens()
     test_rsi_basic_bounds()
+    test_trend_caution_flagged_for_buy_against_long_term_downtrend()
+    test_no_trend_caution_when_signal_aligns_with_trend()
+    test_volume_surge_adds_reason_and_boosts_score()
     test_overbought_state_flagged_as_caution()
     print("\nすべてのロジックテストが完了しました（エラーなし）。")
