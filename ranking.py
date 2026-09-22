@@ -57,7 +57,7 @@ def build_ranking(universe: list, price_ceiling: float, top_n: int = 20) -> list
         try:
             batch_df = yf.download(
                 codes,
-                period="9mo",
+                period="1y",
                 interval="1d",
                 group_by="ticker",
                 auto_adjust=True,

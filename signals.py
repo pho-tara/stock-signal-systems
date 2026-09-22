@@ -15,6 +15,12 @@
   (下降トレンド中のBUY、上昇トレンド中のSELL)、「見せかけの反発/一時的な調整」の
   可能性がある注意書きを追加する。こちらはscoreには加減算しないが、
   trend_cautionフラグとして呼び出し側(通知要否の判定など)から参照できるようにする。
+- 52週レンジ内の位置(week52_high/week52_low/range_position): 渡されたデータフレーム
+  全期間(呼び出し側で約1年分を取得する想定)の高値・安値に対して、現在の終値が
+  どのあたりに位置するか(0=直近安値、1=直近高値)を計算する。あくまで「その銘柄
+  自身の直近の値動きの中でどのあたりか」を示す簡易的な参考情報であり、PER/PBRの
+  ような企業価値そのものの割安度を示すものではない(そちらはvaluation.pyが担当する)。
+  こちらもscoreには一切影響しない。
 
 これは一般的なテクニカル分析の手法を組み合わせたものであり、
 将来の値動きを保証するものではない。投資判断は自己責任で行うこと。
@@ -55,7 +61,8 @@ def evaluate_signal(df: pd.DataFrame) -> dict:
             "direction": "BUY" | "SELL" | "NONE",
             "score": int (1〜3, 一致した根拠の数),
             "reasons": [str, ...],
-            "latest": {close, sma5, sma25, sma75, rsi14, macd, macd_signal}
+            "latest": {close, sma5, sma25, sma75, rsi14, macd, macd_signal,
+                       trend, vol_ratio, week52_high, week52_low, range_position}
         }
     """
     latest = df.iloc[-1]
@@ -110,6 +117,17 @@ def evaluate_signal(df: pd.DataFrame) -> dict:
     if sma75 is not None:
         trend = "UP" if latest_close > sma75 else "DOWN"
 
+    # 6) 52週(取得期間全体)レンジ内の位置(参考情報。scoreには影響しない)。
+    #    High/Low列が無いデータ(合成テストデータなど)ではCloseで代用する。
+    high_col = df["High"] if "High" in df.columns else df["Close"]
+    low_col = df["Low"] if "Low" in df.columns else df["Close"]
+    week52_high = float(high_col.max()) if len(high_col.dropna()) > 0 else None
+    week52_low = float(low_col.min()) if len(low_col.dropna()) > 0 else None
+    range_position = None
+    if week52_high is not None and week52_low is not None and week52_high > week52_low:
+        range_position = (latest_close - week52_low) / (week52_high - week52_low)
+        range_position = max(0.0, min(1.0, range_position))
+
     latest_info = {
         "close": latest_close,
         "sma5": None if pd.isna(latest.get("SMA5")) else float(latest["SMA5"]),
@@ -120,6 +138,9 @@ def evaluate_signal(df: pd.DataFrame) -> dict:
         "macd_signal": None if pd.isna(latest.get("MACD_SIGNAL")) else float(latest["MACD_SIGNAL"]),
         "trend": trend,
         "vol_ratio": vol_ratio,
+        "week52_high": week52_high,
+        "week52_low": week52_low,
+        "range_position": range_position,
     }
 
     if len(reasons_buy) >= len(reasons_sell) and reasons_buy:

@@ -68,6 +68,60 @@ def _cautions_html(r: dict) -> str:
     return f'<div class="caution">⚠ {html.escape(text)}</div>'
 
 
+RANGE_POSITION_STYLE = [
+    # (上限, 色, ラベル) — position(0〜1)がこの上限以下なら該当
+    (0.25, "#0f9d58", "安値圏"),
+    (0.75, "#9aa0a6", "中間"),
+    (1.01, "#d93025", "高値圏"),
+]
+
+
+def _valuation_html(item: dict) -> str:
+    """「割安感」の参考情報(52週レンジ内の位置、およびPER/PBR/配当利回り)。
+
+    52週レンジの位置は株価データのみで計算できる簡易的な指標(その銘柄自身の
+    直近1年の値動きの中でどのあたりかを示すだけで、企業価値の割安度とは別物)。
+    PER/PBR/配当利回りはyfinanceの銘柄情報から取得したもので、より本来の意味での
+    割安度に近いが、取得できない銘柄もある(その場合は表示しない)。
+    いずれもシグナル判定・スコアには一切影響しない参考情報。
+    """
+    r = item["result"]
+    latest = r["latest"]
+    parts = []
+
+    position = latest.get("range_position")
+    if position is not None:
+        pct = position * 100
+        for upper, color, label in RANGE_POSITION_STYLE:
+            if pct <= upper * 100:
+                break
+        parts.append(
+            f'<span class="badge" style="background:{color}22;color:{color};border:1px solid {color}55;">'
+            f"{label}</span>"
+        )
+        parts.append(f'<div class="valuation-note">52週レンジ内 {pct:.0f}%の位置</div>')
+
+    valuation = item.get("valuation")
+    if valuation:
+        bits = []
+        per = valuation.get("per")
+        pbr = valuation.get("pbr")
+        div = valuation.get("dividend_yield_pct")
+        if per is not None:
+            bits.append(f"PER {per:.1f}倍")
+        if pbr is not None:
+            note = "(1倍割れ)" if pbr < 1 else ""
+            bits.append(f"PBR {pbr:.2f}倍{note}")
+        if div is not None:
+            bits.append(f"利回り{div:.1f}%")
+        if bits:
+            parts.append(f'<div class="valuation-note">{"・".join(bits)}</div>')
+
+    if not parts:
+        return '<span class="muted">—</span>'
+    return "".join(parts)
+
+
 def _row_html(item: dict, rank: int | None = None) -> str:
     r = item["result"]
     latest = r["latest"]
@@ -87,6 +141,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td>{_badge_html(r)}</td>
       <td class="reasons">{reasons}{_cautions_html(r)}</td>
       <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
+      <td class="news-cell">{_valuation_html(item)}</td>
     </tr>
     """
 
@@ -100,7 +155,7 @@ def _table_html(items: list, with_rank: bool = False) -> str:
     <table>
       <thead>
         <tr>
-          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th><th>ニュース</th>
+          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th><th>ニュース</th><th>割安度</th>
         </tr>
       </thead>
       <tbody>
@@ -272,6 +327,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   @media (prefers-color-scheme: dark) {{ .caution {{ color: #fbbf24; }} }}
   .news-cell {{ min-width: 140px; }}
   .news-headline {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
+  .valuation-note {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
   .muted {{ color: var(--muted); }}
   .method-tag {{
     display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px;
@@ -326,7 +382,12 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
       「ニュース」列は、Googleニュースの見出しに含まれるキーワード(好材料/悪材料に関する単語)の有無を
       見出し単位で多数決しただけの簡易判定であり、文脈やニュアンスは考慮されていません
       (「AI」表示がある場合はAI(Claude API)による判定です)。
-      判定結果・シグナルの強さには一切影響しないただの参考表示です。
+      判定結果・シグナルの強さには一切影響しないただの参考表示です。<br>
+      「割安度」列のうち「安値圏/中間/高値圏」は、あくまでその銘柄自身の直近52週の値動きの中で
+      現在値がどのあたりかを示すだけの簡易的な参考情報で、企業価値そのものの割安・割高を示すものではありません。
+      PER・PBR・配当利回りはYahoo Financeの銘柄情報から取得していますが、取得元の都合により
+      一部の銘柄で表示されない(「—」のままの)場合があります。いずれも投資助言ではなく、
+      シグナル判定・スコアには一切影響しません。
     </div>
   </div>
 </body>

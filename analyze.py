@@ -11,10 +11,14 @@
    Googleニュースの見出しからキーワードベースでポジティブ/ネガティブを判定(無料・参考情報)。
    同じ銘柄が複数のリストに重複して登場する場合は、1回の実行内でニュース取得結果を
    使い回してリクエスト数・AI利用料を節約する。
-5. 一定以上の強さ(score>=2)のBUY/SELLシグナルが出た銘柄(ウォッチリスト・保有銘柄)が
+5. 同じくダッシュボードに表示する銘柄について、「割安感」の参考情報も付加する。
+   52週レンジ内の位置(株価データのみで計算・追加リクエストなし)はsignals.py側で、
+   PER・PBR・配当利回り(yfinanceの銘柄情報からの追加取得)はvaluation.py側で計算・取得する。
+   こちらも同じ銘柄の重複取得は1回にまとめる。
+6. 一定以上の強さ(score>=2)のBUY/SELLシグナルが出た銘柄(ウォッチリスト・保有銘柄)が
    あればLINEへ通知する。ただし長期トレンドと逆行する注意(trend_caution)がある場合は、
    より強い根拠(score>=3)が揃うまで通知を見送り、ノイズの多い通知を減らす。
-6. すべての結果を docs/index.html に書き出す(GitHub Pagesで公開)
+7. すべての結果を docs/index.html に書き出す(GitHub Pagesで公開)
 
 実行方法:
     pip install -r requirements.txt
@@ -37,6 +41,7 @@ from notify import send_line_broadcast
 from dashboard import build_dashboard_html
 from ranking import build_ranking
 from news_sentiment import attach_news_sentiment_for_lists
+from valuation import attach_valuation_for_lists
 
 MIN_ROWS_REQUIRED = 80  # SMA75計算に必要な最低営業日数
 MIN_SCORE_TO_NOTIFY = 2       # LINE通知するシグナルの最低スコア(根拠の数)
@@ -97,7 +102,7 @@ def process_list(items, label, notify_lines):
         codes = [item["code"] for item in chunk]
         try:
             batch_df = yf.download(
-                codes, period="9mo", interval="1d", group_by="ticker",
+                codes, period="1y", interval="1d", group_by="ticker",
                 auto_adjust=True, threads=True, progress=False,
             )
         except Exception as e:
@@ -172,6 +177,16 @@ def main():
         attach_news_sentiment_for_lists(watch_results, holdings_results, ranking_results, use_ai=use_ai_news)
     except Exception as e:
         print(f"[warn] ニュース判定処理に失敗しました: {e}", file=sys.stderr)
+        traceback.print_exc()
+
+    # 「割安感」の参考情報のうちPER・PBR・配当利回りを付加する
+    # (52週レンジ内の位置はevaluate_signal内で既に計算済み)。
+    # yfinanceの銘柄情報取得はニュース取得よりさらに不安定なことがあるため、
+    # 失敗しても処理全体を止めないようにする。
+    try:
+        attach_valuation_for_lists(watch_results, holdings_results, ranking_results)
+    except Exception as e:
+        print(f"[warn] 割安度(PER/PBR)判定処理に失敗しました: {e}", file=sys.stderr)
         traceback.print_exc()
 
     if notify_lines:

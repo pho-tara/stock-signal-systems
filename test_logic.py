@@ -168,6 +168,37 @@ def test_volume_surge_adds_reason_and_boosts_score():
     assert result_with_surge["latest"]["vol_ratio"] >= 1.5
 
 
+def test_range_position_reflects_52week_high_low():
+    """52週(取得期間全体)のHigh/Lowに対する終値の位置(range_position)が
+    正しく計算されることを確認する。"""
+    idx = pd.date_range("2025-01-01", periods=100, freq="B")
+    close = np.array([1000.0] * 99 + [1050.0])  # 最終日だけ1050
+    high = np.array([1000.0] * 50 + [1200.0] + [1000.0] * 49)  # 51日目に高値1200
+    low = np.array([1000.0] * 30 + [800.0] + [1000.0] * 69)    # 31日目に安値800
+    df = pd.DataFrame({"Close": close, "High": high, "Low": low}, index=idx)
+    df = add_all_indicators(df)
+    result = evaluate_signal(df)
+    latest = result["latest"]
+    print("=== 52週レンジ内の位置 ===", latest["week52_high"], latest["week52_low"], latest["range_position"])
+    assert latest["week52_high"] == 1200.0, latest
+    assert latest["week52_low"] == 800.0, latest
+    expected_position = (1050.0 - 800.0) / (1200.0 - 800.0)
+    assert abs(latest["range_position"] - expected_position) < 1e-9, latest
+
+
+def test_range_position_falls_back_to_close_when_no_high_low():
+    """High/Low列が無いデータ(合成テストデータなど)では、Close列で代用して
+    range_positionを計算し、エラーにならないことを確認する。"""
+    prices_up = np.linspace(1000, 1200, 60)
+    df = add_all_indicators(make_df(prices_up))
+    result = evaluate_signal(df)
+    latest = result["latest"]
+    # 単調増加なので、最終日の終値が全期間の最高値と一致し、position=1.0になる
+    assert latest["week52_high"] == prices_up.max(), latest
+    assert latest["week52_low"] == prices_up.min(), latest
+    assert abs(latest["range_position"] - 1.0) < 1e-9, latest
+
+
 def test_overbought_state_flagged_as_caution():
     # 急騰が続きRSIが極端な水準に達した場合は、過熱警戒(SELL寄り)として
     # 検出されることを確認する(仕様として意図した挙動)
@@ -190,5 +221,7 @@ if __name__ == "__main__":
     test_trend_caution_flagged_for_buy_against_long_term_downtrend()
     test_no_trend_caution_when_signal_aligns_with_trend()
     test_volume_surge_adds_reason_and_boosts_score()
+    test_range_position_reflects_52week_high_low()
+    test_range_position_falls_back_to_close_when_no_high_low()
     test_overbought_state_flagged_as_caution()
     print("\nすべてのロジックテストが完了しました（エラーなし）。")
