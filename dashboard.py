@@ -192,16 +192,18 @@ def _table_html(items: list, with_rank: bool = False) -> str:
     )
     rank_th = "<th>順位</th>" if with_rank else ""
     return f"""
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
-          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th>根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
+          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th class="reasons-th">根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
         </tr>
       </thead>
       <tbody>
         {rows}
       </tbody>
     </table>
+    </div>
     """
 
 
@@ -342,7 +344,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   }}
-  .wrap {{ max-width: 960px; margin: 0 auto; }}
+  .wrap {{ max-width: 1400px; margin: 0 auto; }}
   h1 {{ font-size: 1.4rem; margin: 0 0 4px; }}
   h2 {{ font-size: 1.05rem; margin: 32px 0 12px; }}
   h2:first-of-type {{ margin-top: 20px; }}
@@ -354,15 +356,17 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   }}
   .stat .num {{ font-size: 1.5rem; font-weight: 600; }}
   .stat .label {{ color: var(--muted); font-size: 0.8rem; }}
-  table {{ width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }}
+  .table-scroll {{ overflow-x: auto; border-radius: 10px; }}
+  table {{ width: 100%; min-width: 1180px; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }}
   th, td {{ padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-align: left; }}
   th {{ color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }}
   td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
   td.rank {{ font-weight: 700; color: var(--muted); }}
+  .name-cell {{ min-width: 110px; }}
   .name-cell .name {{ font-weight: 600; }}
   .name-cell .code {{ color: var(--muted); font-size: 0.75rem; }}
   .badge {{ display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }}
-  .reasons {{ color: var(--muted); font-size: 0.78rem; }}
+  td.reasons {{ min-width: 260px; max-width: 360px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }}
   .caution {{ color: #b45309; font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
   @media (prefers-color-scheme: dark) {{ .caution {{ color: #fbbf24; }} }}
   .news-cell {{ min-width: 140px; }}
@@ -395,10 +399,13 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   }}
   .reg-card button:hover {{ background: #1558b0; }}
   @media (max-width: 640px) {{
+    .table-scroll {{ overflow-x: visible; }}
+    table {{ min-width: 0; }}
     table, thead, tbody, th, td, tr {{ display: block; }}
     thead {{ display: none; }}
     tr {{ border-bottom: 1px solid var(--border); padding: 10px 0; }}
     td {{ border: none; padding: 3px 0; display: flex; justify-content: space-between; gap: 8px; }}
+    td.reasons {{ min-width: 0; max-width: none; display: block; }}
     td.num::before {{ content: attr(data-label); color: var(--muted); }}
     .name-cell {{ display: block; }}
   }}
