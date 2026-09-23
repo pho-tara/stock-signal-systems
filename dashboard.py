@@ -318,8 +318,8 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     if ranking is not None:
         ceiling_label = f"{ranking_price_ceiling:,.0f}円以下" if ranking_price_ceiling else ""
         ranking_section = f"""
-        <h2>買い時ランキング（日経225・{ceiling_label}）</h2>
-        {_table_html(ranking, with_rank=True) if ranking else _empty_state("条件に合う銘柄がありませんでした。")}
+        <h2>買い時ランキング（日経225・{ceiling_label}・買いシグナルのみ）</h2>
+        {_table_html(ranking, with_rank=True) if ranking else _empty_state("現在、条件に合う買いシグナル銘柄がありませんでした。")}
         """
 
     registration_section = _registration_section_html(github_repo)

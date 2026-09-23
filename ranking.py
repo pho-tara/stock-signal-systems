@@ -46,7 +46,8 @@ def build_ranking(universe: list, price_ceiling: float, top_n: int = 20) -> list
     top_n: 上位何件を返すか
 
     戻り値: [{"code", "name", "result"}, ...] を「買い時」順にソートしたリスト
-            (price_ceiling以下の銘柄のみ、resultはevaluate_signalの戻り値)
+            (price_ceiling以下、かつdirection=="BUY"(買いシグナル)の銘柄のみが対象。
+             該当銘柄がtop_n未満の場合は、その件数だけを返す)
     """
     candidates = []
 
@@ -80,6 +81,12 @@ def build_ranking(universe: list, price_ceiling: float, top_n: int = 20) -> list
 
                 close = result["latest"]["close"]
                 if close is None or close > price_ceiling:
+                    continue
+
+                # ランキングは「買い時」を探すためのものなので、
+                # 買いシグナル(BUY)が出ている銘柄のみを対象にする。
+                # (様子見や売りシグナルの銘柄は、たとえ株価上限を満たしていても除外する)
+                if result["direction"] != "BUY":
                     continue
 
                 candidates.append({"code": code, "name": name_map[code], "result": result})
