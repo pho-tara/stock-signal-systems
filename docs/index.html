@@ -16,7 +16,7 @@
     margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   }
-  .wrap { max-width: 960px; margin: 0 auto; }
+  .wrap { max-width: 1400px; margin: 0 auto; }
   h1 { font-size: 1.4rem; margin: 0 0 4px; }
   h2 { font-size: 1.05rem; margin: 32px 0 12px; }
   h2:first-of-type { margin-top: 20px; }
@@ -28,15 +28,17 @@
   }
   .stat .num { font-size: 1.5rem; font-weight: 600; }
   .stat .label { color: var(--muted); font-size: 0.8rem; }
-  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
+  .table-scroll { overflow-x: auto; border-radius: 10px; }
+  table { width: 100%; min-width: 1180px; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
   th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-align: left; }
   th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   td.rank { font-weight: 700; color: var(--muted); }
+  .name-cell { min-width: 110px; }
   .name-cell .name { font-weight: 600; }
   .name-cell .code { color: var(--muted); font-size: 0.75rem; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }
-  .reasons { color: var(--muted); font-size: 0.78rem; }
+  td.reasons { min-width: 260px; max-width: 360px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
   .caution { color: #b45309; font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }
   @media (prefers-color-scheme: dark) { .caution { color: #fbbf24; } }
   .news-cell { min-width: 140px; }
@@ -69,10 +71,13 @@
   }
   .reg-card button:hover { background: #1558b0; }
   @media (max-width: 640px) {
+    .table-scroll { overflow-x: visible; }
+    table { min-width: 0; }
     table, thead, tbody, th, td, tr { display: block; }
     thead { display: none; }
     tr { border-bottom: 1px solid var(--border); padding: 10px 0; }
     td { border: none; padding: 3px 0; display: flex; justify-content: space-between; gap: 8px; }
+    td.reasons { min-width: 0; max-width: none; display: block; }
     td.num::before { content: attr(data-label); color: var(--muted); }
     .name-cell { display: block; }
   }
@@ -81,7 +86,7 @@
 <body>
   <div class="wrap">
     <h1>日本株テクニカルシグナル ダッシュボード</h1>
-    <div class="updated">最終更新: 2026-09-23 11:10 JST</div>
+    <div class="updated">最終更新: 2026-09-23 11:29 JST</div>
 
     
     <h2>ウォッチリスト</h2>
@@ -91,10 +96,11 @@
       <div class="stat"><div class="num" style="color:#d93025">1</div><div class="label">売りシグナル</div></div>
     </div>
     
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
-          <th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th>根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
+          <th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th class="reasons-th">根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
         </tr>
       </thead>
       <tbody>
@@ -111,7 +117,7 @@
       <td class="num">48.7</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="円高による収益�悪化懸念と新規事業での利益拡大期待が相殺">円高による収益�悪化懸念と新規事業での利益拡大期待が相殺</div></td>
+      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="円高による収益懸念と新事業での利益目標の好材料が相殺している">円高による収益懸念と新事業での利益目標の好材料が相殺している</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 27%の位置</div><div class="valuation-note">PER 8.6倍・PBR 0.96倍(1倍割れ)・利回り3.3%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#0f9d58;">上昇トレンド継続中(中長期は堅調)</div></td>
     </tr>
@@ -129,7 +135,7 @@
       <td class="num">56.9</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="アーム株上昇とハイテク指数上昇により株価が大幅上昇。決算説明会開催も好材料。">アーム株上昇とハイテク指数上昇により株価が大幅上昇。決算説明会開催も好材料。</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="英アーム株と米ハイテク指数の上昇により株価が8.7%高となり、決算説明会も開催されるなど好材料が揃っている">英アーム株と米ハイテク指数の上昇により株価が8.7%高となり、決算説明会も…</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 52%の位置</div><div class="valuation-note">PER 7.2倍・PBR 1.97倍・利回り0.2%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#0f9d58;">上昇トレンド継続中(中長期は堅調)</div></td>
     </tr>
@@ -147,7 +153,7 @@
       <td class="num">46.8</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="株価低迷と半導体不足の懸念が主要な報道であり、業績圧力が明らかになっている。">株価低迷と半導体不足の懸念が主要な報道であり、業績圧力が明らかになっている。</div></td>
+      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="株価低迷と半導体不足が重荷となっている一方、イベント出展のみで具体的な好材料に乏しい">株価低迷と半導体不足が重荷となっている一方、イベント出展のみで具体的な好材…</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 38%の位置</div><div class="valuation-note">PER 19.8倍・PBR 2.59倍・利回り0.9%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#0f9d58;">上昇トレンド継続中(中長期は堅調)</div></td>
     </tr>
@@ -165,7 +171,7 @@
       <td class="num">48.6</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="日銀の利上げ決定により金融株が売られ、三菱UFJ株価が後場一段安となったため">日銀の利上げ決定により金融株が売られ、三菱UFJ株価が後場一段安となったため</div></td>
+      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="日銀の利上げ決定により金融株が売却され、株価が後場一段安となった">日銀の利上げ決定により金融株が売却され、株価が後場一段安となった</div></td>
       <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 88%の位置</div><div class="valuation-note">PER 15.3倍・PBR 1.79倍・利回り2.7%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
     </tr>
@@ -183,7 +189,7 @@
       <td class="num">64.0</td>
       <td><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">売りシグナル（強）</span></td>
       <td class="reasons">RSIが70を下抜け(買われすぎからの反落)・MACDがシグナルを下抜け(デッドクロス)<div class="caution">⚠ 長期トレンド(SMA75)は上向きです。下落が一時的な調整にとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="見出しは情報提供ページのみで、具体的なニュース内容や企業動向が不明">見出しは情報提供ページのみで、具体的なニュース内容や企業動向が不明</div></td>
+      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="情報提供サイトのリンク集であり、具体的なニュース内容が含まれていない">情報提供サイトのリンク集であり、具体的なニュース内容が含まれていない</div></td>
       <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 93%の位置</div><div class="valuation-note">PER 14.1倍・PBR 1.46倍・利回り3.0%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
     </tr>
@@ -201,7 +207,7 @@
       <td class="num">59.3</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル（強）</span></td>
       <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)・MACDがシグナルを上抜け(ゴールデンクロス)・出来高急増を伴う(直近20日平均比1.7倍)</td>
-      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="株価が最高値から2割下落し、成長戦略に対する市場の不安が先行している状況">株価が最高値から2割下落し、成長戦略に対する市場の不安が先行している状況</div></td>
+      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="株価が最高値から2割下落し、成長戦略への市場不安が主因">株価が最高値から2割下落し、成長戦略への市場不安が主因</div></td>
       <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 78%の位置</div><div class="valuation-note">PER 31.2倍・PBR 3.77倍・利回り1.0%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
     </tr>
@@ -219,7 +225,7 @@
       <td class="num">45.5</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
       <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="金利上昇による売圧と株価下落が顕著。最高値から3割安で回復遅延の懸念">金利上昇による売圧と株価下落が顕著。最高値から3割安で回復遅延の懸念</div></td>
+      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">ネガティブ</span><span class="method-tag">AI</span><div class="news-headline" title="金利上昇による売圧力と株価の大幅下落が主要な懸念材料となっている">金利上昇による売圧力と株価の大幅下落が主要な懸念材料となっている</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 51%の位置</div><div class="valuation-note">PER 42.4倍・PBR 11.27倍・利回り1.4%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#9aa0a6;">下降トレンド継続中(様子見が無難)</div></td>
     </tr>
@@ -237,7 +243,7 @@
       <td class="num">44.0</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="半導体材料での競争力強化、自社株買い実施による株主還元が評価される一方、太陽電池ニュースの反応薄が若干の懸念">半導体材料での競争力強化、自社株買い実施による株主還元が評価される一方、太…</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="半導体材料での競争力強化、自社株買い発表が好材料。太陽電池開発は注目度が低い">半導体材料での競争力強化、自社株買い発表が好材料。太陽電池開発は注目度が低い</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 42%の位置</div><div class="valuation-note">PER 23.1倍・PBR 2.38倍・利回り2.0%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#9aa0a6;">下降トレンド継続中(様子見が無難)</div></td>
     </tr>
@@ -255,7 +261,7 @@
       <td class="num">60.1</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="京セラの保有株評価は安定的だが、売り圧力の兆候も見られ材料に乏しい">京セラの保有株評価は安定的だが、売り圧力の兆候も見られ材料に乏しい</div></td>
+      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="京セラの保有株情報や株価情報が中心で、KDDI自体の業績や材料に関する情報が不足している">京セラの保有株情報や株価情報が中心で、KDDI自体の業績や材料に関する情報…</div></td>
       <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 93%の位置</div><div class="valuation-note">PER 16.7倍・PBR 2.27倍・利回り2.7%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
     </tr>
@@ -273,29 +279,49 @@
       <td class="num">53.2</td>
       <td><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">様子見</span></td>
       <td class="reasons">特筆すべき根拠なし</td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="最高益・上方修正の好決算が株価反発を支える一方、中国市場の不振が懸念材料">最高益・上方修正の好決算が株価反発を支える一方、中国市場の不振が懸念材料</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="最高益・上方修正が評価され株価反発も、中国不振がリスク要因">最高益・上方修正が評価され株価反発も、中国不振がリスク要因</div></td>
       <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 86%の位置</div><div class="valuation-note">PBR 0.53倍(1倍割れ)・利回り4.1%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
     </tr>
     
       </tbody>
     </table>
+    </div>
     
     
     
     
-        <h2>買い時ランキング（日経225・1,500円以下・買いシグナルのみ）</h2>
+        <h2>買い時ランキング（日経225・1,700円以下・買いシグナルのみ）</h2>
         
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
-          <th>順位</th><th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th>根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
+          <th>順位</th><th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th class="reasons-th">根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
         </tr>
       </thead>
       <tbody>
         
     <tr>
       <td class="num rank">1</td>
+      <td class="name-cell">
+        <div class="name">リコー</div>
+        <div class="code">7752.T</div>
+      </td>
+      <td class="num">1,660.5</td>
+      <td class="num">1,648.8</td>
+      <td class="num">1,645.7</td>
+      <td class="num">54.4</td>
+      <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル（強）</span></td>
+      <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)・出来高急増を伴う(直近20日平均比1.6倍)</td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="増益・増配・自社株買いなど好材料が多いが、本日下落という相反する動きが見られ全体としては好材料寄り">増益・増配・自社株買いなど好材料が多いが、本日下落という相反する動きが見ら…</div></td>
+      <td class="news-cell"><span class="badge" style="background:#d9302522;color:#d93025;border:1px solid #d9302555;">高値圏</span><div class="valuation-note">52週レンジ内 83%の位置</div><div class="valuation-note">PER 17.0倍・PBR 0.80倍(1倍割れ)・利回り2.6%</div></td>
+      <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">上昇トレンドだが高値圏(過熱に注意)</div></td>
+    </tr>
+    
+
+    <tr>
+      <td class="num rank">2</td>
       <td class="name-cell">
         <div class="name">NTN</div>
         <div class="code">6472.T</div>
@@ -306,14 +332,14 @@
       <td class="num">53.9</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル（強）</span></td>
       <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)・出来高急増を伴う(直近20日平均比2.2倍)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="日精工との経営統合による相乗効果期待と18年以来の高値更新が好材料。増配も好感">日精工との経営統合による相乗効果期待と18年以来の高値更新が好材料。増配も…</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="日精工との経営統合による相乗効果期待で18年来高値更新。増配も好感材料">日精工との経営統合による相乗効果期待で18年来高値更新。増配も好感材料</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 43%の位置</div><div class="valuation-note">PER 16.4倍・PBR 0.76倍(1倍割れ)・利回り3.4%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#9aa0a6;">下降トレンド継続中(様子見が無難)</div></td>
     </tr>
     
 
     <tr>
-      <td class="num rank">2</td>
+      <td class="num rank">3</td>
       <td class="name-cell">
         <div class="name">ARCHION</div>
         <div class="code">543A.T</div>
@@ -324,14 +350,14 @@
       <td class="num">56.3</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル（強）</span></td>
       <td class="reasons">ゴールデンクロス(SMA5がSMA25を上抜け)・出来高急増を伴う(直近20日平均比2.0倍)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="高利回り株として注目され、統合シナジー期待で好材料が多い">高利回り株として注目され、統合シナジー期待で好材料が多い</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="高利回り株として注目され、統合シナジー期待による成長材料がある">高利回り株として注目され、統合シナジー期待による成長材料がある</div></td>
       <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">安値圏</span><div class="valuation-note">52週レンジ内 9%の位置</div><div class="valuation-note">PER 2.0倍・PBR 0.83倍(1倍割れ)・利回り2.8%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">下降トレンド中だが底値圏(反発待ちの可能性)</div></td>
     </tr>
     
 
     <tr>
-      <td class="num rank">3</td>
+      <td class="num rank">4</td>
       <td class="name-cell">
         <div class="name">パン・パシフィック・インターナショナルホールディングス</div>
         <div class="code">7532.T</div>
@@ -342,14 +368,14 @@
       <td class="num">28.3</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
       <td class="reasons">RSIが売られすぎ水準(28.3)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="増配継続という好材料がある一方で、株価が1年5カ月ぶり安値で下げ圧力が強い">増配継続という好材料がある一方で、株価が1年5カ月ぶり安値で下げ圧力が強い</div></td>
+      <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中立</span><span class="method-tag">AI</span><div class="news-headline" title="24期連続増配の好材料がある一方で、株価が1年5カ月ぶり安値を更新し下げ圧力が強い">24期連続増配の好材料がある一方で、株価が1年5カ月ぶり安値を更新し下げ圧…</div></td>
       <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">安値圏</span><div class="valuation-note">52週レンジ内 1%の位置</div><div class="valuation-note">PER 19.4倍・PBR 3.02倍・利回り1.4%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">下降トレンド中だが底値圏(反発待ちの可能性)</div></td>
     </tr>
     
 
     <tr>
-      <td class="num rank">4</td>
+      <td class="num rank">5</td>
       <td class="name-cell">
         <div class="name">日産自動車</div>
         <div class="code">7201.T</div>
@@ -360,14 +386,14 @@
       <td class="num">45.1</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
       <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="ホンダとの共同開発ソフト搭載車報道で株価が続伸しており、今後の技術協力による競争力強化が期待される">ホンダとの共同開発ソフト搭載車報道で株価が続伸しており、今後の技術協力によ…</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="ホンダとの共同開発ソフト搭載など技術提携の進展が株価上昇につながっている">ホンダとの共同開発ソフト搭載など技術提携の進展が株価上昇につながっている</div></td>
       <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">安値圏</span><div class="valuation-note">52週レンジ内 12%の位置</div><div class="valuation-note">PBR 0.22倍(1倍割れ)</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#b45309;">下降トレンド中だが底値圏(反発待ちの可能性)</div></td>
     </tr>
     
 
     <tr>
-      <td class="num rank">5</td>
+      <td class="num rank">6</td>
       <td class="name-cell">
         <div class="name">日本精工</div>
         <div class="code">6471.T</div>
@@ -378,13 +404,14 @@
       <td class="num">46.1</td>
       <td><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">買いシグナル</span></td>
       <td class="reasons">MACDがシグナルを上抜け(ゴールデンクロス)<div class="caution">⚠ 長期トレンド(SMA75)は下向きです。反発が一時的な戻りにとどまる可能性があります。</div></td>
-      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="上期利益60%上方修正、通期増額、ヒューマノイド需要など好材料が複数">上期利益60%上方修正、通期増額、ヒューマノイド需要など好材料が複数</div></td>
+      <td class="news-cell"><span class="badge" style="background:#0f9d5822;color:#0f9d58;border:1px solid #0f9d5855;">ポジティブ</span><span class="method-tag">AI</span><div class="news-headline" title="上方修正と通期増額、ヒューマノイドロボット関連の成長期待">上方修正と通期増額、ヒューマノイドロボット関連の成長期待</div></td>
       <td class="news-cell"><span class="badge" style="background:#9aa0a622;color:#9aa0a6;border:1px solid #9aa0a655;">中間</span><div class="valuation-note">52週レンジ内 53%の位置</div><div class="valuation-note">PER 23.3倍・PBR 0.77倍(1倍割れ)・利回り3.1%</div></td>
       <td class="outlook-cell"><div class="outlook-note" style="color:#9aa0a6;">下降トレンド継続中(様子見が無難)</div></td>
     </tr>
     
       </tbody>
     </table>
+    </div>
     
         
     
