@@ -76,6 +76,14 @@ RANGE_POSITION_STYLE = [
 ]
 
 
+def _range_position_bucket(position: float) -> tuple:
+    """range_position(0〜1)を(色, ラベル)に分類する(安値圏/中間/高値圏)。"""
+    for upper, color, label in RANGE_POSITION_STYLE:
+        if position <= upper:
+            return color, label
+    return RANGE_POSITION_STYLE[-1][1], RANGE_POSITION_STYLE[-1][2]
+
+
 def _valuation_html(item: dict) -> str:
     """「割安感」の参考情報(52週レンジ内の位置、およびPER/PBR/配当利回り)。
 
@@ -92,9 +100,7 @@ def _valuation_html(item: dict) -> str:
     position = latest.get("range_position")
     if position is not None:
         pct = position * 100
-        for upper, color, label in RANGE_POSITION_STYLE:
-            if pct <= upper * 100:
-                break
+        color, label = _range_position_bucket(position)
         parts.append(
             f'<span class="badge" style="background:{color}22;color:{color};border:1px solid {color}55;">'
             f"{label}</span>"
@@ -122,6 +128,39 @@ def _valuation_html(item: dict) -> str:
     return "".join(parts)
 
 
+# 中長期の目線(参考情報): 長期トレンド(SMA75の向き)と52週レンジ内の位置を
+# 組み合わせて、中長期で見た大まかな状況を一言でまとめたもの。
+# 「判定」列(短期の売買タイミング)とは別枠の情報であり、シグナル判定・スコアには
+# 一切影響しない。あくまで機械的な組み合わせであり、投資助言ではない。
+MID_LONG_TERM_OUTLOOK = {
+    ("UP", "安値圏"): ("#0f9d58", "上昇トレンド中の押し目(中長期の買い場候補)"),
+    ("UP", "中間"): ("#0f9d58", "上昇トレンド継続中(中長期は堅調)"),
+    ("UP", "高値圏"): ("#b45309", "上昇トレンドだが高値圏(過熱に注意)"),
+    ("DOWN", "安値圏"): ("#b45309", "下降トレンド中だが底値圏(反発待ちの可能性)"),
+    ("DOWN", "中間"): ("#9aa0a6", "下降トレンド継続中(様子見が無難)"),
+    ("DOWN", "高値圏"): ("#d93025", "下降トレンドで戻り待ち(高値圏からの調整中)"),
+}
+
+
+def _mid_long_term_outlook(trend: str | None, position: float | None):
+    """trend("UP"/"DOWN")とrange_position(0〜1)から、中長期の目線ラベルを求める。
+    どちらかがNone(データ不足)の場合はNoneを返す(呼び出し側は「—」を表示すること)。
+    """
+    if trend is None or position is None:
+        return None
+    _, bucket_label = _range_position_bucket(position)
+    return MID_LONG_TERM_OUTLOOK.get((trend, bucket_label))
+
+
+def _outlook_html(r: dict) -> str:
+    latest = r["latest"]
+    style = _mid_long_term_outlook(latest.get("trend"), latest.get("range_position"))
+    if not style:
+        return '<span class="muted">—</span>'
+    color, label = style
+    return f'<div class="outlook-note" style="color:{color};">{html.escape(label)}</div>'
+
+
 def _row_html(item: dict, rank: int | None = None) -> str:
     r = item["result"]
     latest = r["latest"]
@@ -142,6 +181,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td class="reasons">{reasons}{_cautions_html(r)}</td>
       <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
       <td class="news-cell">{_valuation_html(item)}</td>
+      <td class="outlook-cell">{_outlook_html(r)}</td>
     </tr>
     """
 
@@ -155,7 +195,7 @@ def _table_html(items: list, with_rank: bool = False) -> str:
     <table>
       <thead>
         <tr>
-          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定</th><th>根拠</th><th>ニュース</th><th>割安度</th>
+          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th>根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
         </tr>
       </thead>
       <tbody>
@@ -328,6 +368,8 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   .news-cell {{ min-width: 140px; }}
   .news-headline {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
   .valuation-note {{ color: var(--muted); font-size: 0.72rem; margin-top: 4px; line-height: 1.4; }}
+  .outlook-cell {{ min-width: 160px; }}
+  .outlook-note {{ font-size: 0.78rem; font-weight: 600; line-height: 1.4; }}
   .muted {{ color: var(--muted); }}
   .method-tag {{
     display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px;
@@ -386,8 +428,11 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
       「割安度」列のうち「安値圏/中間/高値圏」は、あくまでその銘柄自身の直近52週の値動きの中で
       現在値がどのあたりかを示すだけの簡易的な参考情報で、企業価値そのものの割安・割高を示すものではありません。
       PER・PBR・配当利回りはYahoo Financeの銘柄情報から取得していますが、取得元の都合により
-      一部の銘柄で表示されない(「—」のままの)場合があります。いずれも投資助言ではなく、
-      シグナル判定・スコアには一切影響しません。
+      一部の銘柄で表示されない(「—」のままの)場合があります。<br>
+      「判定(短期)」列は数日〜数週間程度の短期的な売買タイミングの参考情報です。「中長期の目線」列は、
+      長期トレンド(SMA75の向き)と52週レンジ内の位置を組み合わせた、数ヶ月〜1年程度の
+      大まかな状況の目安であり、「判定」列とは別の観点の参考情報です（両者が逆方向を示すこともあります）。
+      いずれも機械的な組み合わせによる表示であり投資助言ではなく、シグナル判定・スコアには一切影響しません。
     </div>
   </div>
 </body>
