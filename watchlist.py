@@ -6,6 +6,7 @@
 """
 
 WATCHLIST = [
+    {"code": "8179.T", "name": "ロイヤルホールディングス"},
     {"code": "8881.T", "name": "日神グループHD"},
     {"code": "9432.T", "name": "日本電信電話(NTT)"},
     {"code": "9433.T", "name": "KDDI"},
