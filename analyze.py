@@ -48,7 +48,7 @@ MIN_SCORE_TO_NOTIFY = 2       # LINE通知するシグナルの最低スコア(�
 MIN_SCORE_TO_NOTIFY_AGAINST_TREND = 3  # 長期トレンドに逆行する注意がある場合の最低スコア
 
 # 買い時ランキングの設定
-RANKING_PRICE_CEILING = 1700  # この価格(円)以下の銘柄のみを対象にする
+RANKING_PRICE_CEILING = 1800  # この価格(円)以下の銘柄のみを対象にする
 RANKING_TOP_N = 30            # ダッシュボードに表示する上位件数
 
 CHUNK_SIZE = 40          # 一度に問い合わせる銘柄数(ranking.pyと同じ考え方)
