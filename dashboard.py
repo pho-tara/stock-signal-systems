@@ -211,6 +211,28 @@ def _empty_state(message: str) -> str:
     return f'<div class="empty">{message}</div>'
 
 
+def _refresh_button_html(github_repo: str | None) -> str:
+    """
+    「日本株テクニカルシグナルチェック」ワークフローの実行ページへの直リンクボタン。
+    GitHubにログイン済みの状態でクリックすれば、Actionsタブから探す手間なく
+    「Run workflow」ボタンまで1クリックで到達できる(実行の確定自体はGitHub側の
+    ボタン操作が必要。ページからワンクリックで自動実行しない理由は下記docstring参照)。
+    """
+    if not github_repo:
+        return ""
+    url = f"https://github.com/{github_repo}/actions/workflows/stock-check.yml"
+    return f"""
+    <div class="refresh-box">
+      <a class="refresh-link" href="{html.escape(url)}" target="_blank" rel="noopener">
+        今すぐ最新データに更新する（GitHub Actionsを開く）
+      </a>
+      <div class="refresh-note">
+        リンク先で「Run workflow」→ もう一度「Run workflow」を押すと、数分後にこのページが更新されます。
+      </div>
+    </div>
+    """
+
+
 def _registration_section_html(github_repo: str | None) -> str:
     """
     ダッシュボード上から、GitHub Issueフォーム(登録画面)を
@@ -325,6 +347,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
         """
 
     registration_section = _registration_section_html(github_repo)
+    refresh_button = _refresh_button_html(github_repo)
 
     return f"""<!doctype html>
 <html lang="ja">
@@ -381,6 +404,13 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     background: #1a73e822; color: #1a73e8; border: 1px solid #1a73e855;
   }}
   .empty {{ color: var(--muted); font-size: 0.85rem; padding: 16px; background: var(--card); border-radius: 10px; }}
+  .refresh-box {{ margin: 4px 0 20px; }}
+  .refresh-link {{
+    display: inline-block; padding: 8px 14px; border-radius: 6px; background: #1a73e8; color: #fff;
+    font-size: 0.85rem; font-weight: 600; text-decoration: none;
+  }}
+  .refresh-link:hover {{ background: #1558b0; }}
+  .refresh-note {{ color: var(--muted); font-size: 0.72rem; margin-top: 6px; line-height: 1.5; }}
   .disclaimer {{ margin-top: 24px; color: var(--muted); font-size: 0.75rem; line-height: 1.6; }}
   .reg-desc {{ color: var(--muted); font-size: 0.82rem; line-height: 1.6; margin: 0 0 16px; }}
   .reg-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
@@ -415,6 +445,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   <div class="wrap">
     <h1>日本株テクニカルシグナル ダッシュボード</h1>
     <div class="updated">最終更新: {now}</div>
+    {refresh_button}
 
     {watchlist_section}
     {holdings_section}
