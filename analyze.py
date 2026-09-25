@@ -15,6 +15,8 @@
    52週レンジ内の位置(株価データのみで計算・追加リクエストなし)はsignals.py側で、
    PER・PBR・配当利回り(yfinanceの銘柄情報からの追加取得)はvaluation.py側で計算・取得する。
    こちらも同じ銘柄の重複取得は1回にまとめる。
+   さらに、アナリスト予想(目標株価コンセンサス・投資判断レーティング)もanalyst.py側で
+   同様に取得する(日本株はデータが存在しない銘柄も多い)。
 6. 一定以上の強さ(score>=2)のBUY/SELLシグナルが出た銘柄(ウォッチリスト・保有銘柄)が
    あればLINEへ通知する。ただし長期トレンドと逆行する注意(trend_caution)がある場合は、
    より強い根拠(score>=3)が揃うまで通知を見送り、ノイズの多い通知を減らす。
@@ -42,13 +44,14 @@ from dashboard import build_dashboard_html
 from ranking import build_ranking
 from news_sentiment import attach_news_sentiment_for_lists
 from valuation import attach_valuation_for_lists
+from analyst import attach_analyst_estimates_for_lists
 
 MIN_ROWS_REQUIRED = 80  # SMA75計算に必要な最低営業日数
 MIN_SCORE_TO_NOTIFY = 2       # LINE通知するシグナルの最低スコア(根拠の数)
 MIN_SCORE_TO_NOTIFY_AGAINST_TREND = 3  # 長期トレンドに逆行する注意がある場合の最低スコア
 
 # 買い時ランキングの設定
-RANKING_PRICE_CEILING = 1800  # この価格(円)以下の銘柄のみを対象にする
+RANKING_PRICE_CEILING = 1500  # この価格(円)以下の銘柄のみを対象にする
 RANKING_TOP_N = 30            # ダッシュボードに表示する上位件数
 
 CHUNK_SIZE = 40          # 一度に問い合わせる銘柄数(ranking.pyと同じ考え方)
@@ -187,6 +190,15 @@ def main():
         attach_valuation_for_lists(watch_results, holdings_results, ranking_results)
     except Exception as e:
         print(f"[warn] 割安度(PER/PBR)判定処理に失敗しました: {e}", file=sys.stderr)
+        traceback.print_exc()
+
+    # アナリスト予想(目標株価コンセンサス・投資判断レーティング)を付加する。
+    # PER/PBRと同じくyfinanceの銘柄情報取得に依存し、日本株は米国株より
+    # データが存在しない銘柄が多いため、失敗・空欄があっても処理全体は継続する。
+    try:
+        attach_analyst_estimates_for_lists(watch_results, holdings_results, ranking_results)
+    except Exception as e:
+        print(f"[warn] アナリスト予想の取得処理に失敗しました: {e}", file=sys.stderr)
         traceback.print_exc()
 
     if notify_lines:

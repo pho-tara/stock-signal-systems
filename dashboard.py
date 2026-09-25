@@ -128,6 +128,64 @@ def _valuation_html(item: dict) -> str:
     return "".join(parts)
 
 
+# アナリスト予想の投資判断レーティング(recommendationKey)の表示スタイル。
+# yfinance/Yahoo Finance側の値であり、将来値が増減する可能性がある
+# (未知の値の場合は_analyst_html側でグレー表示にフォールバックする)。
+RECOMMENDATION_STYLE = {
+    "strong_buy": ("#0f9d58", "強気(強い買い)"),
+    "buy": ("#0f9d58", "買い"),
+    "hold": ("#9aa0a6", "中立"),
+    "underperform": ("#d93025", "弱気(売り)"),
+    "sell": ("#d93025", "弱気(強い売り)"),
+}
+
+
+def _analyst_html(item: dict) -> str:
+    """アナリスト予想(目標株価コンセンサス・投資判断レーティング)の参考情報。
+
+    目標株価はYahoo Financeの銘柄情報から取得したアナリスト予想の平均・
+    最高・最低値で、現在の終値との比較(現値比の上振れ/下振れ率)は、
+    既に取得済みの株価データ(latest close)を使ってこの表示側で計算する。
+    日本株は米国株に比べてこのデータ自体が存在しない銘柄も多く、
+    その場合は「—」表示になる。いずれもシグナル判定・スコアには
+    一切影響しない参考情報であり、投資助言ではない。
+    """
+    analyst = item.get("analyst")
+    if not analyst:
+        return '<span class="muted">—</span>'
+
+    parts = []
+
+    rec_key = analyst.get("recommendation_key")
+    if rec_key is not None:
+        color, label = RECOMMENDATION_STYLE.get(rec_key, ("#9aa0a6", rec_key))
+        num_analysts = analyst.get("num_analysts")
+        count_note = f"（{num_analysts}人）" if num_analysts else ""
+        parts.append(
+            f'<span class="badge" style="background:{color}22;color:{color};border:1px solid {color}55;">'
+            f"{html.escape(label)}</span>{html.escape(count_note)}"
+        )
+
+    target_mean = analyst.get("target_mean")
+    if target_mean is not None:
+        close = item["result"]["latest"].get("close")
+        upside_note = ""
+        if close is not None and close > 0:
+            upside = (target_mean - close) / close * 100
+            sign = "+" if upside >= 0 else ""
+            upside_note = f"（現値比{sign}{upside:.1f}%）"
+        parts.append(f'<div class="valuation-note">目標株価(平均) {target_mean:,.0f}円{upside_note}</div>')
+
+    target_low = analyst.get("target_low")
+    target_high = analyst.get("target_high")
+    if target_low is not None and target_high is not None:
+        parts.append(f'<div class="valuation-note">レンジ {target_low:,.0f}〜{target_high:,.0f}円</div>')
+
+    if not parts:
+        return '<span class="muted">—</span>'
+    return "".join(parts)
+
+
 # 中長期の目線(参考情報): 長期トレンド(SMA75の向き)と52週レンジ内の位置を
 # 組み合わせて、中長期で見た大まかな状況を一言でまとめたもの。
 # 「判定」列(短期の売買タイミング)とは別枠の情報であり、シグナル判定・スコアには
@@ -181,6 +239,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td class="reasons">{reasons}{_cautions_html(r)}</td>
       <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
       <td class="news-cell">{_valuation_html(item)}</td>
+      <td class="news-cell">{_analyst_html(item)}</td>
       <td class="outlook-cell">{_outlook_html(r)}</td>
     </tr>
     """
@@ -196,7 +255,7 @@ def _table_html(items: list, with_rank: bool = False) -> str:
     <table>
       <thead>
         <tr>
-          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th class="reasons-th">根拠</th><th>ニュース</th><th>割安度</th><th>中長期の目線</th>
+          {rank_th}<th>銘柄</th><th>終値</th><th>SMA5</th><th>SMA25</th><th>RSI14</th><th>判定(短期)</th><th class="reasons-th">根拠</th><th>ニュース</th><th>割安度</th><th>アナリスト予想</th><th>中長期の目線</th>
         </tr>
       </thead>
       <tbody>
@@ -380,7 +439,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   .stat .num {{ font-size: 1.5rem; font-weight: 600; }}
   .stat .label {{ color: var(--muted); font-size: 0.8rem; }}
   .table-scroll {{ overflow-x: auto; border-radius: 10px; }}
-  table {{ width: 100%; min-width: 1180px; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }}
+  table {{ width: 100%; min-width: 1340px; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }}
   th, td {{ padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-align: left; }}
   th {{ color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }}
   td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
@@ -467,6 +526,10 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
       現在値がどのあたりかを示すだけの簡易的な参考情報で、企業価値そのものの割安・割高を示すものではありません。
       PER・PBR・配当利回りはYahoo Financeの銘柄情報から取得していますが、取得元の都合により
       一部の銘柄で表示されない(「—」のままの)場合があります。<br>
+      「アナリスト予想」列は、Yahoo Financeが集計している証券アナリストの目標株価コンセンサス
+      (平均・レンジ)と投資判断レーティングです。Claudeやこのダッシュボードが判断・生成したものではなく、
+      あくまで外部の証券アナリストによる予想の引用です。日本株はPER・PBRよりもさらにデータが存在しない
+      銘柄が多く、多くの銘柄で「—」表示になります。目標株価の的中を保証するものではありません。<br>
       「判定(短期)」列は数日〜数週間程度の短期的な売買タイミングの参考情報です。「中長期の目線」列は、
       長期トレンド(SMA75の向き)と52週レンジ内の位置を組み合わせた、数ヶ月〜1年程度の
       大まかな状況の目安であり、「判定」列とは別の観点の参考情報です（両者が逆方向を示すこともあります）。
