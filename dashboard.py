@@ -5,8 +5,11 @@
 GitHub Pages (docs/index.html) での公開を想定。
 """
 import html
+from collections import Counter
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+from freshness import is_data_fresh
 
 JST = ZoneInfo("Asia/Tokyo")
 
@@ -66,6 +69,67 @@ def _cautions_html(r: dict) -> str:
         return ""
     text = "・".join(cautions)
     return f'<div class="caution">⚠ {html.escape(text)}</div>'
+
+
+def _data_basis_date(*item_lists) -> str | None:
+    """複数の[{"code","name","result"}, ...]リストを横断して、
+    最も多くの銘柄で共通している「データの基準日」(latest_date)を求める。
+
+    ほとんどの銘柄は同じ日の終値になっているはずなので、その多数派の日付を
+    ページ全体の「データ基準日」として扱う。件数が同数の場合は、より新しい
+    日付を優先する(多くの銘柄が最新化できているのに、ごく一部だけ更新に
+    失敗しているケースを「基準日が古い」と誤判定しないため)。
+    """
+    dates = [
+        item["result"]["latest"].get("latest_date")
+        for items in item_lists
+        for item in items
+        if item.get("result") and item["result"].get("latest")
+    ]
+    dates = [d for d in dates if d]
+    if not dates:
+        return None
+    counts = Counter(dates)
+    max_count = max(counts.values())
+    candidates = [d for d, c in counts.items() if c == max_count]
+    return max(candidates)
+
+
+def _stale_row_note(item: dict, basis_date: str | None) -> str:
+    """個別の銘柄のデータ基準日が、ページ全体の基準日と異なる場合の注意書き。
+    (例: 他の銘柄は本日の終値なのに、この銘柄だけ取得に失敗して前回のまま、
+    といったケースを検知するための参考情報。scoreには影響しない)"""
+    if not basis_date:
+        return ""
+    row_date = item.get("result", {}).get("latest", {}).get("latest_date")
+    if not row_date or row_date == basis_date:
+        return ""
+    return (
+        f'<div class="caution">⚠ この銘柄のデータはページ全体の基準日({html.escape(basis_date)})より'
+        f"古い可能性があります(この銘柄のデータ基準日: {html.escape(row_date)})</div>"
+    )
+
+
+def _data_freshness_html(basis_date: str | None, today=None) -> str:
+    """ページ上部に表示する「データ基準日」の表示。
+
+    基準日そのものが、直近の営業日として不自然に古い場合(freshness.is_data_fresh
+    がFalseを返す場合)は、その旨の注意書きも合わせて表示する。
+    latest_dateが1件も無い(古いバージョンで生成されたデータなど)場合は
+    何も表示しない。
+    """
+    if not basis_date:
+        return ""
+    fresh = is_data_fresh(basis_date, today=today)
+    parts = [f'<div class="data-freshness">データ基準日: {html.escape(basis_date)}</div>']
+    if fresh is False:
+        parts.append(
+            '<div class="data-freshness-warning">'
+            "⚠ 株価データが直近の営業日のものではない可能性があります"
+            "(Yahoo Finance側の不調や取得エラーなどが考えられます。しばらくしてから"
+            "「今すぐ最新データに更新する」を再実行してみてください)。</div>"
+        )
+    return "".join(parts)
 
 
 RANGE_POSITION_STYLE = [
@@ -219,7 +283,7 @@ def _outlook_html(r: dict) -> str:
     return f'<div class="outlook-note" style="color:{color};">{html.escape(label)}</div>'
 
 
-def _row_html(item: dict, rank: int | None = None) -> str:
+def _row_html(item: dict, rank: int | None = None, basis_date: str | None = None) -> str:
     r = item["result"]
     latest = r["latest"]
     reasons = "・".join(r["reasons"]) if r["reasons"] else "特筆すべき根拠なし"
@@ -236,7 +300,7 @@ def _row_html(item: dict, rank: int | None = None) -> str:
       <td class="num">{_fmt(latest['sma25'], 1)}</td>
       <td class="num">{_fmt(latest['rsi14'], 1)}</td>
       <td>{_badge_html(r)}</td>
-      <td class="reasons">{reasons}{_cautions_html(r)}</td>
+      <td class="reasons">{reasons}{_cautions_html(r)}{_stale_row_note(item, basis_date)}</td>
       <td class="news-cell">{_news_badge_html(item.get('news'))}</td>
       <td class="news-cell">{_valuation_html(item)}</td>
       <td class="news-cell">{_analyst_html(item)}</td>
@@ -245,9 +309,10 @@ def _row_html(item: dict, rank: int | None = None) -> str:
     """
 
 
-def _table_html(items: list, with_rank: bool = False) -> str:
+def _table_html(items: list, with_rank: bool = False, basis_date: str | None = None) -> str:
     rows = "\n".join(
-        _row_html(item, rank=(i + 1) if with_rank else None) for i, item in enumerate(items)
+        _row_html(item, rank=(i + 1) if with_rank else None, basis_date=basis_date)
+        for i, item in enumerate(items)
     )
     rank_th = "<th>順位</th>" if with_rank else ""
     return f"""
@@ -376,9 +441,13 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
     ranking_price_ceiling: ランキングの価格上限(表示用)
     github_repo: "owner/repo" 形式のGitHubリポジトリ名(ダッシュボードからの登録フォーム用。Noneなら非表示)
     """
-    now = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
+    now_dt = datetime.now(JST)
+    now = now_dt.strftime("%Y-%m-%d %H:%M JST")
     buy_count = sum(1 for i in results if i["result"]["direction"] == "BUY")
     sell_count = sum(1 for i in results if i["result"]["direction"] == "SELL")
+
+    basis_date = _data_basis_date(results, holdings or [], ranking or [])
+    data_freshness_html = _data_freshness_html(basis_date, today=now_dt.date())
 
     watchlist_section = f"""
     <h2>ウォッチリスト</h2>
@@ -387,14 +456,14 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
       <div class="stat"><div class="num" style="color:#0f9d58">{buy_count}</div><div class="label">買いシグナル</div></div>
       <div class="stat"><div class="num" style="color:#d93025">{sell_count}</div><div class="label">売りシグナル</div></div>
     </div>
-    {_table_html(results) if results else _empty_state("表示できるデータがありません。")}
+    {_table_html(results, basis_date=basis_date) if results else _empty_state("表示できるデータがありません。")}
     """
 
     holdings_section = ""
     if holdings:
         holdings_section = f"""
         <h2>保有銘柄</h2>
-        {_table_html(holdings)}
+        {_table_html(holdings, basis_date=basis_date)}
         """
 
     ranking_section = ""
@@ -402,7 +471,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
         ceiling_label = f"{ranking_price_ceiling:,.0f}円以下" if ranking_price_ceiling else ""
         ranking_section = f"""
         <h2>買い時ランキング（日経225・{ceiling_label}・買いシグナルのみ）</h2>
-        {_table_html(ranking, with_rank=True) if ranking else _empty_state("現在、条件に合う買いシグナル銘柄がありませんでした。")}
+        {_table_html(ranking, with_rank=True, basis_date=basis_date) if ranking else _empty_state("現在、条件に合う買いシグナル銘柄がありませんでした。")}
         """
 
     registration_section = _registration_section_html(github_repo)
@@ -431,6 +500,9 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   h2 {{ font-size: 1.05rem; margin: 32px 0 12px; }}
   h2:first-of-type {{ margin-top: 20px; }}
   .updated {{ color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }}
+  .data-freshness {{ color: var(--muted); font-size: 0.78rem; margin-bottom: 4px; }}
+  .data-freshness-warning {{ color: #b45309; font-size: 0.78rem; margin-bottom: 12px; line-height: 1.5; }}
+  @media (prefers-color-scheme: dark) {{ .data-freshness-warning {{ color: #fbbf24; }} }}
   .summary {{ display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }}
   .stat {{
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -504,6 +576,7 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
   <div class="wrap">
     <h1>日本株テクニカルシグナル ダッシュボード</h1>
     <div class="updated">最終更新: {now}</div>
+    {data_freshness_html}
     {refresh_button}
 
     {watchlist_section}
@@ -533,7 +606,11 @@ def build_dashboard_html(results: list, holdings: list | None = None, ranking: l
       「判定(短期)」列は数日〜数週間程度の短期的な売買タイミングの参考情報です。「中長期の目線」列は、
       長期トレンド(SMA75の向き)と52週レンジ内の位置を組み合わせた、数ヶ月〜1年程度の
       大まかな状況の目安であり、「判定」列とは別の観点の参考情報です（両者が逆方向を示すこともあります）。
-      いずれも機械的な組み合わせによる表示であり投資助言ではなく、シグナル判定・スコアには一切影響しません。
+      いずれも機械的な組み合わせによる表示であり投資助言ではなく、シグナル判定・スコアには一切影響しません。<br>
+      「データ基準日」は、表示している株価データが実際に何月何日の終値かを示す参考情報です
+      （最終更新のワークフロー実行日時と、参照している株価データの日付は必ずしも一致しないため、別に表示しています）。
+      土日・日本の祝日は正常な範囲として扱いますが、それ以上に古い場合は注意書きを表示します。
+      一部の銘柄だけ他よりデータが古い場合は、該当行の「根拠」列にも個別に注意書きを表示します。
     </div>
   </div>
 </body>
